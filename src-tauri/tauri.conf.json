@@ -17,10 +17,10 @@
       "icons/icon.ico"
     ]
   },
-  "productName": "tauri_template",
-  "mainBinaryName": "tauri_template",
+  "productName": "fuelcell_planeform",
+  "mainBinaryName": "fuelcell_planeform",
   "version": "0.1.0",
-  "identifier": "com.tauri_template.app",
+  "identifier": "com.fuelcell-planeform.app",
   "plugins": {},
   "app": {
     "security": {
@@ -28,7 +28,7 @@
     },
     "windows": [
       {
-        "title": "tauri_template",
+        "title": "fuelcell_planeform",
         "width": 800,
         "height": 600,
         "decorations": true,
