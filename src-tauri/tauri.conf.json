@@ -29,8 +29,9 @@
     "windows": [
       {
         "title": "fuelcell_planeform",
-        "width": 800,
-        "height": 600,
+        "width": 1540,
+        "height": 900,
+        "resizable": false,
         "decorations": true,
         "transparent": true,
         "useHttpsScheme": true
