@@ -3,125 +3,105 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use chrono::Local;
-use serde::{Deserialize, Serialize};
-use serde_json::Value as Json;
-use std::env;
-use std::fs;
+mod commands;
+mod models;
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-struct PlaneFormInput {
-    switch_type: SwitchType,
-    switch_name: String,
-    switch_description: String,
-    movement_axis: MovementAxis,
-    movement_mode: bool,
-    momentary_switch: bool,
-    bleed_margins: f32,
-    default_position: f32,
-    upper_limit: f32,
-    lower_limit: f32,
+use commands::*;
+use tauri::Manager;
+
+use std::sync::Mutex;
+
+pub const OUTPUT_FOLDER_PATH: &str = "plane_configs";
+
+fn setup_plane_config_folder(app: &mut tauri::App) {
+    let app_data_dir = app
+        .path()
+        .app_data_dir()
+        .expect("Couldn't find app_data_dir");
+
+    let plane_config_folder_path = app_data_dir.join(OUTPUT_FOLDER_PATH);
+
+    std::fs::create_dir_all(&plane_config_folder_path)
+        .expect("Failed to create app data directory");
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-enum SwitchType {
-    Lever,
-    Button,
-    Dial,
-    Throttle,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-enum MovementAxis {
-    X,
-    Y,
-    Z,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-enum SoundEffect {
-    LeverSound,
-    ButtonSound,
-    DialSound,
-    ThrottleSound,
-}
-
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-struct PlaneFormData {
-    switch_type: SwitchType,
-    switch_name: String,
-    switch_description: String,
-    movement_axis: MovementAxis,
-    sound_effect: SoundEffect,
-    movement_mode: bool,
-    momentary_switch: bool,
-    bleed_margins: f32,
-    default_position: f32,
-    upper_limit: f32,
-    lower_limit: f32,
+struct AppData {
+    current_json_file: String,
 }
 
 #[tauri::command]
-fn save_json_file(form_data: Json) -> Result<String, String> {
-    println!("{:?}", &form_data);
+fn set_current_json_file(app_handle: tauri::AppHandle, file_name: String) {
+    println!("Setting current file to: {:?}", &file_name);
 
-    // Deserialize the JSON into the PlaneFormInput struct
-    let plane_input: PlaneFormInput = serde_json::from_value(form_data)
-        .map_err(|e| format!("Failed to deserialize JSON: {}", e))?;
+    let state = app_handle.state::<Mutex<AppData>>();
 
-    let sound_effect = match plane_input.switch_type {
-        SwitchType::Lever => SoundEffect::LeverSound,
-        SwitchType::Button => SoundEffect::ButtonSound,
-        SwitchType::Dial => SoundEffect::DialSound,
-        SwitchType::Throttle => SoundEffect::ThrottleSound,
+    let mut state = state.lock().unwrap();
+
+    state.current_json_file = file_name;
+}
+
+#[tauri::command]
+fn get_current_json_file(app_handle: tauri::AppHandle) -> String {
+    let state = app_handle.state::<Mutex<AppData>>();
+
+    let state = state.lock().unwrap();
+
+    return state.current_json_file.clone();
+}
+
+#[tauri::command]
+fn create_new_file(app_handle: tauri::AppHandle, file_name: String) -> Result<(), String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .expect("Couldn't find app_data_dir");
+
+    let plane_config_folder_path = app_data_dir.join(OUTPUT_FOLDER_PATH);
+
+    // Create the directory if it doesn't exist
+    std::fs::create_dir_all(&plane_config_folder_path)
+        .map_err(|e| format!("Failed to create directory: {}", e))?;
+
+    // Ensure the file name ends with .json
+    let file_name = if !file_name.ends_with(".json") {
+        format!("{}.json", file_name)
+    } else {
+        file_name
     };
-
-    // Create the complete PlaneFormData struct
-    let plane_form = PlaneFormData {
-        switch_type: plane_input.switch_type,
-        switch_name: plane_input.switch_name,
-        switch_description: plane_input.switch_description,
-        movement_axis: plane_input.movement_axis,
-        movement_mode: plane_input.movement_mode,
-        momentary_switch: plane_input.momentary_switch,
-        bleed_margins: plane_input.bleed_margins,
-        default_position: plane_input.default_position,
-        upper_limit: plane_input.upper_limit,
-        lower_limit: plane_input.lower_limit,
-        sound_effect,
-    };
-
-    // Get the current executable's directory
-    let current_exe_dir = env::current_exe()
-        .map_err(|e| format!("Failed to get executable path: {}", e))?
-        .parent()
-        .ok_or("Failed to get parent directory")?
-        .to_path_buf();
-
-    // Generate timestamp for unique filename
-    let timestamp = Local::now().format("%Y%m%d_%H%M%S");
-    let filename = format!("json_output_{}.json", timestamp);
 
     // Create the full file path
-    let mut file_path = current_exe_dir;
-    file_path.push(filename);
+    let file_path = plane_config_folder_path.join(file_name);
 
-    let json_string = serde_json::to_string_pretty(&plane_form)
-        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+    // Create an empty JSON object as initial content
+    let initial_content = "{}";
 
     // Write the file
-    fs::write(&file_path, json_string).map_err(|e| format!("Failed to write file: {}", e))?;
+    std::fs::write(&file_path, initial_content)
+        .map_err(|e| format!("Failed to create file: {}", e))?;
 
-    Ok(file_path.to_string_lossy().into_owned())
+    Ok(())
 }
 
 fn main() {
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![save_json_file])
+        .plugin(tauri_plugin_opener::init())
+        .invoke_handler(tauri::generate_handler![
+            add_new_switch,
+            open_plane_config_folder,
+            load_existing_plane_config_files,
+            set_current_json_file,
+            get_current_json_file,
+            create_new_file,
+        ])
+        .setup(|app| {
+            setup_plane_config_folder(app);
+
+            app.manage(Mutex::new(AppData {
+                current_json_file: "".to_string(),
+            }));
+
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
