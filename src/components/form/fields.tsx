@@ -150,52 +150,55 @@ export function MovementAxisField({ control }: FieldProps) {
   );
 }
 
-export function SwitchLimitsFields({ control }: FieldProps) {
+export function UpperLimitField({ control }: FieldProps) {
   return (
-    <>
-      <FormField
-        control={control}
-        name="upperLimit"
-        render={({ field, fieldState: { error } }) => (
-          <FormItem>
-            <FormLabel>Upper Switch Limit</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="90.0"
-                type="number"
-                {...field}
-                onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                autoComplete="off"
-              />
-            </FormControl>
-            {error && (
-              <p className="text-red-500 text-sm mt-1">{error.message}</p>
-            )}
-          </FormItem>
-        )}
-      />
-      <FormField
-        control={control}
-        name="lowerLimit"
-        render={({ field, fieldState: { error } }) => (
-          <FormItem>
-            <FormLabel>Lower Switch Limit</FormLabel>
-            <FormControl>
-              <Input
-                placeholder="0.0"
-                type="number"
-                {...field}
-                onChange={(e) => field.onChange(e.target.valueAsNumber)}
-                autoComplete="off"
-              />
-            </FormControl>
-            {error && (
-              <p className="text-red-500 text-sm mt-1">{error.message}</p>
-            )}
-          </FormItem>
-        )}
-      />
-    </>
+    <FormField
+      control={control}
+      name="upperLimit"
+      render={({ field, fieldState: { error } }) => (
+        <FormItem>
+          <FormLabel>Upper Limit</FormLabel>
+          <FormControl>
+            <Input
+              placeholder="90.0"
+              type="number"
+              {...field}
+              onChange={(e) => field.onChange(e.target.valueAsNumber)}
+              autoComplete="off"
+            />
+          </FormControl>
+          {error && (
+            <p className="text-red-500 text-sm mt-1">{error.message}</p>
+          )}
+        </FormItem>
+      )}
+    />
+  );
+}
+
+export function LowerLimitField({ control }: FieldProps) {
+  return (
+    <FormField
+      control={control}
+      name="lowerLimit"
+      render={({ field, fieldState: { error } }) => (
+        <FormItem>
+          <FormLabel>Lower Limit</FormLabel>
+          <FormControl>
+            <Input
+              placeholder="0.0"
+              type="number"
+              {...field}
+              onChange={(e) => field.onChange(e.target.valueAsNumber)}
+              autoComplete="off"
+            />
+          </FormControl>
+          {error && (
+            <p className="text-red-500 text-sm mt-1">{error.message}</p>
+          )}
+        </FormItem>
+      )}
+    />
   );
 }
 
@@ -206,7 +209,7 @@ export function BleedMarginsField({ control }: FieldProps) {
       name="bleedMargins"
       render={({ field, fieldState: { error } }) => (
         <FormItem>
-          <FormLabel>Switch Bleed Margins</FormLabel>
+          <FormLabel>Bleed Margins</FormLabel>
           <FormControl>
             <Input
               placeholder="0.5"

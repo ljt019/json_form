@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { invoke } from "@tauri-apps/api/core";
@@ -12,15 +11,14 @@ import {
   SwitchDescriptionField,
   MovementModeField,
   MovementAxisField,
-  SwitchLimitsFields,
+  UpperLimitField,
+  LowerLimitField,
   BleedMarginsField,
   MomentarySwitchField,
   DefaultPositionField,
 } from "@/components/form/fields";
 
 export function PlaneForm() {
-  const [showMomentaryFields, setShowMomentaryFields] = useState(false);
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,11 +36,6 @@ export function PlaneForm() {
   });
 
   const isMomentary = form.watch("momentarySwitch");
-
-  useEffect(() => {
-    const timer = setTimeout(() => setShowMomentaryFields(isMomentary), 300);
-    return () => clearTimeout(timer);
-  }, [isMomentary]);
 
   async function saveFormData(formData: FormData) {
     try {
@@ -70,65 +63,41 @@ export function PlaneForm() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 bg-card text-card-foreground shadow rounded-lg">
       <h1 className="text-3xl font-bold mb-6 text-foreground">
         New Switch Form
       </h1>
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="space-y-8 pt-8 max-w-2xl mx-auto"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <LeftColumn control={form.control} />
-            <RightColumn
-              control={form.control}
-              isMomentary={isMomentary}
-              showMomentaryFields={showMomentaryFields}
-            />
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SwitchNameField control={form.control} />
+            <SwitchTypeField control={form.control} />
+          </div>
+          <SwitchDescriptionField control={form.control} />
+
+          <MovementModeField control={form.control} />
+          <MovementAxisField control={form.control} />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <UpperLimitField control={form.control} />
+            <LowerLimitField control={form.control} />
+            <BleedMarginsField control={form.control} />
+          </div>
+          <MomentarySwitchField control={form.control} />
+          <div
+            className={`transition-all duration-300 ease-in-out ${
+              isMomentary
+                ? "max-h-20 opacity-100"
+                : "max-h-0 opacity-0 overflow-hidden"
+            }`}
+          >
+            <DefaultPositionField control={form.control} />
           </div>
           <Button type="submit" className="w-full">
             Create JSON File
           </Button>
         </form>
       </Form>
-    </div>
-  );
-}
-
-function LeftColumn({ control }: { control: any }) {
-  return (
-    <div className="space-y-4">
-      <SwitchTypeField control={control} />
-      <SwitchNameField control={control} />
-      <SwitchDescriptionField control={control} />
-      <MovementModeField control={control} />
-      <MovementAxisField control={control} />
-    </div>
-  );
-}
-
-function RightColumn({
-  control,
-  isMomentary,
-  showMomentaryFields,
-}: {
-  control: any;
-  isMomentary: boolean;
-  showMomentaryFields: boolean;
-}) {
-  return (
-    <div className="space-y-4">
-      <SwitchLimitsFields control={control} />
-      <BleedMarginsField control={control} />
-      <MomentarySwitchField control={control} />
-      <div
-        className={`space-y-4 overflow-hidden transition-all duration-300 ease-in-out ${
-          isMomentary ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0"
-        }`}
-      >
-        {showMomentaryFields && <DefaultPositionField control={control} />}
-      </div>
     </div>
   );
 }
