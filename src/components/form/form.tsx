@@ -1,6 +1,5 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { invoke } from "@tauri-apps/api/core";
 
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
@@ -17,6 +16,7 @@ import {
   MomentarySwitchField,
   DefaultPositionField,
 } from "@/components/form/fields";
+import useCreateNewSwitch from "@/hooks/mutations/useCreateNewSwitch";
 
 export function PlaneForm() {
   const form = useForm<FormData>({
@@ -36,14 +36,7 @@ export function PlaneForm() {
   });
 
   const isMomentary = form.watch("momentarySwitch");
-
-  async function saveFormData(formData: FormData) {
-    try {
-      await invoke("add_new_switch", { formData });
-    } catch (error) {
-      console.log(error);
-    }
-  }
+  const { mutate: createNewSwitch, isPending } = useCreateNewSwitch();
 
   const onSubmit = async (data: FormData) => {
     try {
@@ -56,7 +49,7 @@ export function PlaneForm() {
         validatedData = { ...validatedData, defaultPosition: 0 };
       }
 
-      await saveFormData(validatedData);
+      createNewSwitch(validatedData);
     } catch (error) {
       console.error("Error submitting form:", error);
     }
@@ -93,8 +86,8 @@ export function PlaneForm() {
           >
             <DefaultPositionField control={form.control} />
           </div>
-          <Button type="submit" className="w-full">
-            Create JSON File
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? "Creating..." : "Create JSON File"}
           </Button>
         </form>
       </Form>

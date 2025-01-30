@@ -65,7 +65,10 @@ export function ExistingFilesList({
         {files && files.length > 0 ? (
           <FileList files={files} selectedFile={selectedFile} />
         ) : (
-          <p className="text-muted-foreground">No files found.</p>
+          <p className="text-muted-foreground">
+            No configs found. *Press the new plane config button to create a new
+            one*
+          </p>
         )}
       </div>
     </div>

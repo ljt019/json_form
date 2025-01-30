@@ -19,7 +19,7 @@
   },
   "productName": "fuelcell_planeform",
   "mainBinaryName": "fuelcell_planeform",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "identifier": "com.fuelcell-planeform.app",
   "plugins": {},
   "app": {
@@ -34,6 +34,7 @@
         "resizable": false,
         "decorations": true,
         "transparent": true,
+        "shadow": true,
         "useHttpsScheme": true
       }
     ]

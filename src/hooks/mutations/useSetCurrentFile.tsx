@@ -17,7 +17,7 @@ export default function useSetCurrentFile() {
       });
     },
     onError: (error) => {
-      console.error("Failed to add part to exhibit:", error);
+      console.error("Failed to set current file", error);
     },
   });
 }
