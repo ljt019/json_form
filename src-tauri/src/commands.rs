@@ -1,6 +1,8 @@
+use crate::AppData;
 use serde_json::Value as Json;
 use std::collections::HashMap;
 use std::fs;
+use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
@@ -151,4 +153,57 @@ pub fn add_new_switch(app_handle: tauri::AppHandle, form_data: Json) -> Result<S
         .map_err(|e| format!("Failed to write JSON file: {}", e))?;
 
     Ok("Switch added/updated successfully".to_string())
+}
+
+#[tauri::command]
+pub fn set_current_json_file(app_handle: tauri::AppHandle, file_name: String) {
+    println!("Setting current file to: {:?}", &file_name);
+
+    let state = app_handle.state::<Mutex<AppData>>();
+
+    let mut state = state.lock().unwrap();
+
+    state.current_json_file = file_name;
+}
+
+#[tauri::command]
+pub fn get_current_json_file(app_handle: tauri::AppHandle) -> String {
+    let state = app_handle.state::<Mutex<AppData>>();
+
+    let state = state.lock().unwrap();
+
+    return state.current_json_file.clone();
+}
+
+#[tauri::command]
+pub fn create_new_file(app_handle: tauri::AppHandle, file_name: String) -> Result<(), String> {
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .expect("Couldn't find app_data_dir");
+
+    let plane_config_folder_path = app_data_dir.join(OUTPUT_FOLDER_PATH);
+
+    // Create the directory if it doesn't exist
+    std::fs::create_dir_all(&plane_config_folder_path)
+        .map_err(|e| format!("Failed to create directory: {}", e))?;
+
+    // Ensure the file name ends with .json
+    let file_name = if !file_name.ends_with(".json") {
+        format!("{}.json", file_name)
+    } else {
+        file_name
+    };
+
+    // Create the full file path
+    let file_path = plane_config_folder_path.join(file_name);
+
+    // Create an empty JSON object as initial content
+    let initial_content = "{}";
+
+    // Write the file
+    std::fs::write(&file_path, initial_content)
+        .map_err(|e| format!("Failed to create file: {}", e))?;
+
+    Ok(())
 }
