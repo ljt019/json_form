@@ -1,17 +1,27 @@
 use crate::AppData;
+use serde::Serialize;
 use serde_json::Value as Json;
 use std::collections::HashMap;
 use std::fs;
+use std::io::Read;
 use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
 
 use crate::OUTPUT_FOLDER_PATH;
 
-use crate::models::{NewSwitchSubmission, PlaneSwitchData, SoundEffect, SwitchData, SwitchType};
+use crate::models::{
+    FullConfigFile, NewSwitchSubmission, PlaneSwitchData, SoundEffect, SwitchData, SwitchType,
+};
+
+#[derive(Serialize)]
+pub struct PlaneConfigFile {
+    pub file_name: String,
+    pub model_path: String,
+}
 
 #[tauri::command]
-pub fn load_existing_plane_config_files(app_handle: tauri::AppHandle) -> Vec<String> {
+pub fn load_existing_plane_config_files(app_handle: tauri::AppHandle) -> Vec<PlaneConfigFile> {
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
@@ -19,28 +29,44 @@ pub fn load_existing_plane_config_files(app_handle: tauri::AppHandle) -> Vec<Str
 
     let plane_config_folder_path = app_data_dir.join(OUTPUT_FOLDER_PATH);
 
-    // Check if the directory exists and early return with an empty vector if it doesn't
+    // Return an empty vector if the directory doesn't exist.
     if !plane_config_folder_path.exists() {
         return Vec::new();
     }
 
-    // Read the directory entries
+    // Read the directory entries.
     let entries = fs::read_dir(plane_config_folder_path).expect("Failed to read directory");
 
-    // Filter out the .json files and collect their names
-    let json_files: Vec<String> = entries
-        .filter_map(|entry| {
-            let entry = entry.expect("Failed to read entry");
-            let path = entry.path();
-            if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
-                Some(path.file_name().unwrap().to_string_lossy().into_owned())
-            } else {
-                None
-            }
-        })
-        .collect();
+    let mut plane_configs = Vec::new();
 
-    json_files
+    for entry in entries.filter_map(Result::ok) {
+        let path: std::path::PathBuf = entry.path();
+        if path.is_file() && path.extension().map_or(false, |ext| ext == "json") {
+            // Get the file name.
+            let file_name = path.file_name().unwrap().to_string_lossy().into_owned();
+
+            // Read and parse the JSON file to extract the modelPath.
+            let mut file_content = String::new();
+            if let Ok(mut file) = fs::File::open(&path) {
+                if file.read_to_string(&mut file_content).is_ok() {
+                    if let Ok(json) = serde_json::from_str::<serde_json::Value>(&file_content) {
+                        let model_path = json
+                            .get("modelPath")
+                            .and_then(|v| v.as_str())
+                            .unwrap_or("")
+                            .to_string();
+
+                        plane_configs.push(PlaneConfigFile {
+                            file_name,
+                            model_path,
+                        });
+                    }
+                }
+            }
+        }
+    }
+
+    plane_configs
 }
 
 #[tauri::command]
@@ -176,7 +202,11 @@ pub fn get_current_json_file(app_handle: tauri::AppHandle) -> String {
 }
 
 #[tauri::command]
-pub fn create_new_file(app_handle: tauri::AppHandle, file_name: String) -> Result<(), String> {
+pub fn create_new_config_file(
+    app_handle: tauri::AppHandle,
+    plane_name: String,
+    model_file_path: String,
+) -> Result<(), String> {
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
@@ -188,22 +218,91 @@ pub fn create_new_file(app_handle: tauri::AppHandle, file_name: String) -> Resul
     std::fs::create_dir_all(&plane_config_folder_path)
         .map_err(|e| format!("Failed to create directory: {}", e))?;
 
-    // Ensure the file name ends with .json
-    let file_name = if !file_name.ends_with(".json") {
-        format!("{}.json", file_name)
-    } else {
-        file_name
-    };
-
     // Create the full file path
-    let file_path = plane_config_folder_path.join(file_name);
+    let file_path = plane_config_folder_path.join(format!("{}.json", plane_name));
 
-    // Create an empty JSON object as initial content
-    let initial_content = "{}";
+    // Build the JSON structure with the provided planeName, modelPath, and an empty "switches" object.
+    let initial_content = serde_json::json!({
+        "planeName": plane_name,
+        "modelPath": model_file_path,
+        "switches": {}
+    });
 
-    // Write the file
-    std::fs::write(&file_path, initial_content)
+    // Convert the JSON object into a pretty-printed string
+    let file_content = serde_json::to_string_pretty(&initial_content)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+
+    // Write the JSON string to the file
+    std::fs::write(&file_path, file_content)
         .map_err(|e| format!("Failed to create file: {}", e))?;
 
     Ok(())
 }
+
+#[tauri::command]
+pub fn get_current_file_contents(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let state = app_handle.state::<std::sync::Mutex<crate::AppData>>();
+    let state = state.lock().unwrap();
+
+    let current_json_file_name = state.current_json_file.clone();
+
+    let app_data_dir = app_handle
+        .path()
+        .app_data_dir()
+        .expect("Couldn't find app_data_dir");
+
+    let plane_config_folder_path = app_data_dir.join(crate::OUTPUT_FOLDER_PATH);
+    let current_json_file_path = plane_config_folder_path.join(current_json_file_name);
+
+    // Read the file contents
+    let file_contents = fs::read_to_string(current_json_file_path)
+        .map_err(|e| format!("Failed to read file: {}", e))?;
+
+    // Parse the JSON contents into our FullConfigFile struct
+    let config_file: FullConfigFile =
+        serde_json::from_str(&file_contents).map_err(|e| format!("Failed to parse JSON: {}", e))?;
+
+    // Serialize the struct back to a JSON string
+    let json_output = serde_json::to_string_pretty(&config_file)
+        .map_err(|e| format!("Failed to serialize to JSON: {}", e))?;
+
+    Ok(json_output)
+}
+
+/*
+
+JSON FILE EXAMPLE
+-------------------
+
+{
+  "planeName": "b-52",
+  "modelPath": "/home/models/b52.glb",
+  "switches": {
+    "Lever1": {
+      "switchType": "lever",
+      "switchDescription": "Air Pressure Switch ",
+      "movementAxis": "Y",
+      "soundEffect": "leverSound",
+      "movementMode": true,
+      "momentarySwitch": false,
+      "bleedMargins": 0.3,
+      "defaultPosition": 0.0,
+      "upperLimit": 90.0,
+      "lowerLimit": 0.0
+    },
+    "Dial2": {
+      "switchType": "dial",
+      "switchDescription": "A lever description I just wrote",
+      "movementAxis": "Z",
+      "soundEffect": "dialSound",
+      "movementMode": false,
+      "momentarySwitch": true,
+      "bleedMargins": 0.25,
+      "defaultPosition": 25.0,
+      "upperLimit": 75.0,
+      "lowerLimit": 0.0
+    }
+  }
+}
+
+*/

@@ -57,9 +57,6 @@ export function PlaneForm() {
 
   return (
     <div className="p-6 bg-card text-card-foreground shadow rounded-lg">
-      <h1 className="text-3xl font-bold mb-6 text-foreground">
-        New Switch Form
-      </h1>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

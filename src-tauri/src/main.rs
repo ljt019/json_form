@@ -38,7 +38,8 @@ fn main() {
             load_existing_plane_config_files,
             set_current_json_file,
             get_current_json_file,
-            create_new_file,
+            create_new_config_file,
+            get_current_file_contents
         ])
         .setup(|app| {
             setup_plane_config_folder(app);

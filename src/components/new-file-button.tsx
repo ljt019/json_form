@@ -12,7 +12,7 @@ export function NewFileButton({ onNewFile }: NewFileButtonProps) {
       className="transition-all duration-200 hover:scale-105"
     >
       <PlusCircle className="mr-2 h-4 w-4" />
-      New Plane Config
+      New Plane
     </Button>
   );
 }

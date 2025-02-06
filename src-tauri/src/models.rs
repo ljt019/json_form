@@ -61,3 +61,11 @@ pub struct NewSwitchSubmission {
     pub upper_limit: f32,
     pub lower_limit: f32,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FullConfigFile {
+    pub plane_name: String,
+    pub model_path: String,
+    pub switches: HashMap<String, SwitchData>,
+}

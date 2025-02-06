@@ -15,6 +15,7 @@ export default function useSetCurrentFile() {
       queryClient.invalidateQueries({
         queryKey: ["selected-file"],
       });
+      queryClient.invalidateQueries({ queryKey: ["selected-config-data"] });
     },
     onError: (error) => {
       console.error("Failed to set current file", error);

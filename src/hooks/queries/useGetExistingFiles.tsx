@@ -1,19 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
-type FileName = string;
-type ExistingFiles = FileName[];
+export interface PlaneConfigFile {
+  file_name: string;
+  model_path: string;
+}
 
-async function fetchExistingFiles() {
-  const existing_files: ExistingFiles = await invoke(
+async function fetchExistingFiles(): Promise<PlaneConfigFile[]> {
+  const existing_files: PlaneConfigFile[] = await invoke(
     "load_existing_plane_config_files"
   );
-
   return existing_files;
 }
 
 export function useGetExistingFiles() {
-  return useQuery<ExistingFiles>({
+  return useQuery<PlaneConfigFile[]>({
     queryKey: ["existing-files"],
     queryFn: fetchExistingFiles,
   });
