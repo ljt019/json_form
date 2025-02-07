@@ -17,10 +17,10 @@
       "icons/icon.ico"
     ]
   },
-  "productName": "fuelcell_planeform",
-  "mainBinaryName": "fuelcell_planeform",
+  "productName": "BAE_Plane_Configurator",
+  "mainBinaryName": "BAE_Plane_Configurator",
   "version": "0.1.1",
-  "identifier": "com.fuelcell-planeform.app",
+  "identifier": "com.BAE-Plane-Configurator.app",
   "plugins": {},
   "app": {
     "security": {
@@ -44,7 +44,7 @@
     },
     "windows": [
       {
-        "title": " BAE Plane Configurator",
+        "title": "BAE Plane Configurator",
         "width": 1540,
         "height": 900,
         "resizable": true,
