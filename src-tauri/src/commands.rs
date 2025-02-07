@@ -4,6 +4,7 @@ use serde_json::Value as Json;
 use std::collections::HashMap;
 use std::fs;
 use std::io::Read;
+use std::path::PathBuf;
 use std::sync::Mutex;
 use tauri::Manager;
 use tauri_plugin_opener::OpenerExt;
@@ -91,27 +92,29 @@ pub fn open_plane_config_folder(app_handle: tauri::AppHandle) {
 
 #[tauri::command]
 pub fn add_new_switch(app_handle: tauri::AppHandle, form_data: Json) -> Result<String, String> {
+    use serde_json::json;
+
+    // Get app state to determine the current file name
     let state = app_handle.state::<std::sync::Mutex<crate::AppData>>();
     let state = state.lock().unwrap();
-
     let current_json_file_name = state.current_json_file.clone();
 
+    // Get the app data directory and construct the file path
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
         .expect("Couldn't find app_data_dir");
-
     let plane_config_folder_path = app_data_dir.join(OUTPUT_FOLDER_PATH);
     let current_json_file_path = plane_config_folder_path.join(current_json_file_name.clone());
 
     println!("{:?}", current_json_file_name);
     println!("{:?}", &form_data);
 
-    // Deserialize the JSON into the NewSwitchSubmission struct
+    // Deserialize the incoming form data into our expected structure
     let plane_input: NewSwitchSubmission = serde_json::from_value(form_data)
         .map_err(|e| format!("Failed to deserialize JSON: {}", e))?;
 
-    // Determine the sound effect based on the switch type
+    // Determine the appropriate sound effect based on switch type
     let sound_effect = match plane_input.switch_type {
         SwitchType::Lever => SoundEffect::LeverSound,
         SwitchType::Button => SoundEffect::ButtonSound,
@@ -119,7 +122,7 @@ pub fn add_new_switch(app_handle: tauri::AppHandle, form_data: Json) -> Result<S
         SwitchType::Throttle => SoundEffect::ThrottleSound,
     };
 
-    // Create the complete SwitchData struct
+    // Build the complete switch data structure
     let plane_form = SwitchData {
         switch_type: plane_input.switch_type,
         switch_description: plane_input.switch_description,
@@ -133,48 +136,53 @@ pub fn add_new_switch(app_handle: tauri::AppHandle, form_data: Json) -> Result<S
         sound_effect,
     };
 
-    // Read and parse the existing JSON file, or create new data structure if file is empty or invalid
-    let mut existing_data: PlaneSwitchData = if current_json_file_path.exists() {
-        let file_content = std::fs::read_to_string(&current_json_file_path)
-            .map_err(|e| format!("Failed to read JSON file: {}", e))?;
-
-        if file_content.trim().is_empty() {
-            // Handle empty file
-            PlaneSwitchData {
-                switches: HashMap::new(),
-            }
-        } else {
-            // Try to parse existing content
-            serde_json::from_str(&file_content).unwrap_or_else(|_| {
-                // If parsing fails, return new empty structure
-                PlaneSwitchData {
-                    switches: HashMap::new(),
-                }
-            })
-        }
-    } else {
-        // File doesn't exist, create new structure
-        PlaneSwitchData {
-            switches: HashMap::new(),
-        }
-    };
-
-    // Update or add the new switch data
-    existing_data
-        .switches
-        .insert(plane_input.switch_name, plane_form);
-
-    // Create the directory if it doesn't exist
+    // Ensure the directory exists (creates it if it doesn't)
     if !plane_config_folder_path.exists() {
         std::fs::create_dir_all(&plane_config_folder_path)
             .map_err(|e| format!("Failed to create config directory: {}", e))?;
     }
 
-    // Serialize the updated data back to JSON
-    let updated_json = serde_json::to_string_pretty(&existing_data)
-        .map_err(|e| format!("Failed to serialize updated JSON: {}", e))?;
+    // Read and parse the existing JSON file into a serde_json::Value so that we can preserve all keys.
+    let mut json_data: serde_json::Value = if current_json_file_path.exists() {
+        let file_content = std::fs::read_to_string(&current_json_file_path)
+            .map_err(|e| format!("Failed to read JSON file: {}", e))?;
+        if file_content.trim().is_empty() {
+            json!({})
+        } else {
+            serde_json::from_str(&file_content).unwrap_or_else(|_| json!({}))
+        }
+    } else {
+        json!({})
+    };
 
-    // Write the updated JSON back to the file
+    // Make sure the root is an object
+    if !json_data.is_object() {
+        return Err("Invalid JSON structure: expected an object at the root".to_string());
+    }
+
+    // Get (or create) the "switches" object within the root
+    let switches = json_data
+        .as_object_mut()
+        .unwrap()
+        .entry("switches")
+        .or_insert(json!({}));
+
+    if !switches.is_object() {
+        return Err("Invalid JSON structure: expected 'switches' to be an object".to_string());
+    }
+
+    // Serialize the new switch data to a JSON value
+    let new_switch_value = serde_json::to_value(&plane_form)
+        .map_err(|e| format!("Failed to serialize switch data: {}", e))?;
+    // Insert or update the switch entry (overwriting if the name already exists)
+    switches
+        .as_object_mut()
+        .unwrap()
+        .insert(plane_input.switch_name, new_switch_value);
+
+    // Serialize the updated JSON with pretty formatting and write it back to the file
+    let updated_json = serde_json::to_string_pretty(&json_data)
+        .map_err(|e| format!("Failed to serialize updated JSON: {}", e))?;
     std::fs::write(&current_json_file_path, updated_json)
         .map_err(|e| format!("Failed to write JSON file: {}", e))?;
 
@@ -267,6 +275,12 @@ pub fn get_current_file_contents(app_handle: tauri::AppHandle) -> Result<String,
         .map_err(|e| format!("Failed to serialize to JSON: {}", e))?;
 
     Ok(json_output)
+}
+
+#[tauri::command]
+pub fn open_file(path: String) -> Result<Vec<u8>, String> {
+    println!("{}", &path);
+    fs::read(PathBuf::from(path)).map_err(|e| e.to_string())
 }
 
 /*

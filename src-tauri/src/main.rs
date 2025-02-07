@@ -31,6 +31,8 @@ fn setup_plane_config_folder(app: &mut tauri::App) {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_fs::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             add_new_switch,
@@ -39,7 +41,8 @@ fn main() {
             set_current_json_file,
             get_current_json_file,
             create_new_config_file,
-            get_current_file_contents
+            get_current_file_contents,
+            open_file
         ])
         .setup(|app| {
             setup_plane_config_folder(app);

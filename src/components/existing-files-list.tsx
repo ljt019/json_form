@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plane, Check, Loader2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
+// Import the dialog plugin.
+import { open } from "@tauri-apps/plugin-dialog";
 
 // Utility to remove .json extension.
 export function removeJsonExtension(fileName: string) {
@@ -34,6 +36,134 @@ interface FileListProps {
 interface FileListEntryProps {
   file: { file_name: string; model_path: string };
   isSelected: boolean;
+}
+
+interface FileDropzoneProps {
+  onFileSelect: (filePath: string) => void;
+}
+
+// Updated FileDropzone component: now just a button that triggers the Tauri file dialog.
+export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
+  const handleFileExplorer = async () => {
+    const selected = await open({
+      multiple: false,
+      filters: [{ name: "Model Files", extensions: ["*"] }],
+    });
+    if (selected && !Array.isArray(selected)) {
+      onFileSelect(selected);
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Button
+        onClick={handleFileExplorer}
+        type="button"
+        variant="outline"
+        className="w-full"
+      >
+        Open File Explorer
+      </Button>
+    </div>
+  );
+}
+
+function NewFileEntry({
+  fileName,
+  modelPath,
+  onFileNameChange,
+  onModelPathChange,
+  onSubmit,
+  onCancel,
+}: NewFileEntryProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    await onSubmit();
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="flex flex-col space-y-4">
+      <Input
+        type="text"
+        placeholder="Enter plane name"
+        value={fileName}
+        onChange={(e) => onFileNameChange(e.target.value)}
+      />
+      {/* Use the updated FileDropzone */}
+      <FileDropzone onFileSelect={onModelPathChange} />
+      {modelPath && (
+        <p className="text-sm text-muted-foreground">
+          Selected file: {modelPath}
+        </p>
+      )}
+      <div className="flex items-center space-x-2">
+        <Button onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting ? "Creating..." : "Create"}
+        </Button>
+        <Button variant="ghost" onClick={onCancel}>
+          Cancel
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function FileList({ files, selectedFile }: FileListProps) {
+  return (
+    <>
+      {files.map((file) => (
+        <FileListEntry
+          key={file.file_name}
+          file={file}
+          isSelected={
+            selectedFile !== undefined && file.file_name === selectedFile
+          }
+        />
+      ))}
+    </>
+  );
+}
+
+function FileListEntry({ file, isSelected }: FileListEntryProps) {
+  const setCurrentFile = useSetCurrentFile();
+
+  const handleSetCurrentFile = () => {
+    setCurrentFile.mutate(file.file_name);
+  };
+
+  return (
+    <div className="flex flex-col bg-muted p-2 rounded-md">
+      <div className="flex items-center justify-between">
+        <span className="flex items-center text-foreground">
+          <Plane className="mr-2 h-4 w-4" />
+          <span className="truncate">
+            {removeJsonExtension(file.file_name)}
+          </span>
+        </span>
+        <Button
+          variant={isSelected ? "default" : "outline"}
+          size="sm"
+          className="ml-2"
+          onClick={handleSetCurrentFile}
+          disabled={setCurrentFile.isPending}
+        >
+          {setCurrentFile.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : isSelected ? (
+            <>
+              <Check className="mr-2 h-4 w-4" />
+              Selected
+            </>
+          ) : (
+            "Set as Current"
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 export function ExistingFilesList({
@@ -77,106 +207,10 @@ export function ExistingFilesList({
           <FileList files={files} selectedFile={selectedFile} />
         ) : (
           <p className="text-muted-foreground">
-            No configs found. *Press the new plane config button to create a new
-            one*
+            No configs found. Press the new plane config button to create a new
+            one.
           </p>
         )}
-      </div>
-    </div>
-  );
-}
-
-function NewFileEntry({
-  fileName,
-  modelPath,
-  onFileNameChange,
-  onModelPathChange,
-  onSubmit,
-  onCancel,
-}: NewFileEntryProps) {
-  return (
-    <div className="flex flex-col space-y-2">
-      <div className="flex items-center space-x-2">
-        <Input
-          type="text"
-          placeholder="Enter plane name"
-          value={fileName}
-          onChange={(e) => onFileNameChange(e.target.value)}
-        />
-      </div>
-      <div className="flex items-center space-x-2">
-        <Input
-          type="text"
-          placeholder="Enter model file path"
-          value={modelPath}
-          onChange={(e) => onModelPathChange(e.target.value)}
-        />
-      </div>
-      <div className="flex items-center space-x-2">
-        <Button onClick={onSubmit}>Create</Button>
-        <Button variant="ghost" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function FileList({ files, selectedFile }: FileListProps) {
-  return (
-    <>
-      {files.map((file) => (
-        <FileListEntry
-          key={file.file_name}
-          file={file}
-          isSelected={
-            selectedFile !== undefined && file.file_name === selectedFile
-          }
-        />
-      ))}
-    </>
-  );
-}
-
-function FileListEntry({ file, isSelected }: FileListEntryProps) {
-  const setCurrentFile = useSetCurrentFile();
-
-  const handleSetCurrentFile = () => {
-    setCurrentFile.mutate(file.file_name);
-  };
-
-  return (
-    <div className="flex flex-col bg-muted p-2 rounded-md">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center text-foreground">
-          <Plane className="mr-2 h-4 w-4" />
-          <span className="truncate">
-            {removeJsonExtension(file.file_name)}
-          </span>
-        </span>
-        <Button
-          variant={isSelected ? "secondary" : "outline"}
-          size="sm"
-          className="ml-2"
-          onClick={handleSetCurrentFile}
-          disabled={setCurrentFile.isPending}
-        >
-          {setCurrentFile.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : isSelected ? (
-            <>
-              <Check className="mr-2 h-4 w-4" />
-              Selected
-            </>
-          ) : (
-            "Set as Current"
-          )}
-        </Button>
-      </div>
-      <div className="mt-1 ml-6">
-        <span className="text-sm text-muted-foreground italic">
-          {file.model_path}
-        </span>
       </div>
     </div>
   );

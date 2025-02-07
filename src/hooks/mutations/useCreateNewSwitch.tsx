@@ -27,6 +27,9 @@ export default function useCreateNewSwitch() {
       queryClient.invalidateQueries({
         queryKey: ["existing-files"],
       });
+      queryClient.invalidateQueries({
+        queryKey: ["selected-config-data"],
+      });
     },
   });
 }

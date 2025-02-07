@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import type { Control } from "react-hook-form";
 
 interface FieldProps {
@@ -27,19 +28,15 @@ export function SwitchTypeField({ control }: FieldProps) {
       render={({ field, fieldState: { error } }) => (
         <FormItem>
           <FormLabel>Switch Type</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="Select switch type" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="lever">Lever</SelectItem>
-              <SelectItem value="dial">Dial</SelectItem>
-              <SelectItem value="button">Button</SelectItem>
-              <SelectItem value="throttle">Throttle</SelectItem>
-            </SelectContent>
-          </Select>
+          <FormControl>
+            <Input
+              placeholder="Button"
+              {...field}
+              autoComplete="off"
+              disabled={true}
+              className="capitalize"
+            />
+          </FormControl>
           {error && (
             <p className="text-red-500 text-sm mt-1">{error.message}</p>
           )}
@@ -58,7 +55,12 @@ export function SwitchNameField({ control }: FieldProps) {
         <FormItem>
           <FormLabel>Switch Name</FormLabel>
           <FormControl>
-            <Input placeholder="BatSwitch1" {...field} autoComplete="off" />
+            <Input
+              placeholder="BatSwitch1"
+              {...field}
+              autoComplete="off"
+              disabled={true}
+            />
           </FormControl>
           {error && (
             <p className="text-red-500 text-sm mt-1">{error.message}</p>
@@ -78,10 +80,11 @@ export function SwitchDescriptionField({ control }: FieldProps) {
         <FormItem>
           <FormLabel>Switch Description</FormLabel>
           <FormControl>
-            <Input
+            <Textarea
               placeholder="Air pressure switch"
               {...field}
               autoComplete="off"
+              className="resize-none"
             />
           </FormControl>
           {error && (
@@ -129,7 +132,7 @@ export function MovementAxisField({ control }: FieldProps) {
       render={({ field, fieldState: { error } }) => (
         <FormItem>
           <FormLabel>Movement Axis</FormLabel>
-          <Select onValueChange={field.onChange} defaultValue={field.value}>
+          <Select value={field.value || ""} onValueChange={field.onChange}>
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder="Select movement axis" />
