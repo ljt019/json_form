@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 async function setCurrentFile(file_name: string) {
-  await invoke("set_current_json_file", { fileName: file_name });
+  await invoke("set_current_config_file", { fileName: file_name });
 }
 
 export default function useSetCurrentFile() {

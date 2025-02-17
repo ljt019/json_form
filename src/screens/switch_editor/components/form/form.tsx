@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -11,7 +10,7 @@ import {
   CardContent,
   CardFooter,
 } from "@/components/ui/card";
-import { formSchema, type FormData } from "@/components/form/schema";
+import { formSchema, type FormData } from "./schema";
 import {
   SwitchTypeField,
   SwitchNameField,
@@ -23,57 +22,70 @@ import {
   BleedMarginsField,
   MomentarySwitchField,
   DefaultPositionField,
-} from "@/components/form/fields";
+} from "./fields";
 import useCreateNewSwitch from "@/hooks/mutations/useCreateNewSwitch";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
-import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen"; // Adjust the path as needed
+import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen";
 
 interface PlaneFormProps {
   selectedSwitch: SwitchItem | null;
 }
 
+/*
+The outer component renders nothing if no switch is selected.
+When a switch is selected, it renders the internal form and
+forces a remount by setting a key based on the switch's name.
+*/
 export function PlaneForm({ selectedSwitch }: PlaneFormProps) {
+  if (!selectedSwitch) {
+    return null;
+  }
+  return (
+    <PlaneFormInternal
+      key={selectedSwitch.name}
+      selectedSwitch={selectedSwitch}
+    />
+  );
+}
+
+/*
+The internal form component initializes with default values based
+on the selected switch and configuration data. Using a unique key
+on the parent ensures that this component is re-mounted whenever
+a new switch is selected.
+*/
+function PlaneFormInternal({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
   // Fetch the current configuration data (which includes switch-specific configs)
   const { data: planeData } = useGetSelectedConfigData();
+  const existingConfig = planeData?.switches[selectedSwitch.name];
 
+  // Build default values using the selected switch and any existing config.
+  const defaultValues: FormData = {
+    switchName: selectedSwitch.name,
+    switchType: selectedSwitch.switchType as
+      | "button"
+      | "dial"
+      | "lever"
+      | "throttle",
+    movementAxis: (existingConfig?.movementAxis ?? "") as "X" | "Y" | "Z",
+    switchDescription: existingConfig?.switchDescription ?? "",
+    movementMode: existingConfig?.movementMode ?? false,
+    momentarySwitch: existingConfig?.momentarySwitch ?? false,
+    defaultPosition: existingConfig?.defaultPosition ?? undefined,
+    upperLimit: Number(existingConfig?.upperLimit ?? 0),
+    lowerLimit: Number(existingConfig?.lowerLimit ?? 0),
+    bleedMargins: Number(existingConfig?.bleedMargins ?? 0),
+  };
+
+  // Initialize the form with the default values.
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      switchType: undefined,
-      movementAxis: undefined,
-      switchName: "",
-      switchDescription: "",
-      movementMode: false,
-      momentarySwitch: false,
-      defaultPosition: undefined,
-      upperLimit: undefined,
-      lowerLimit: undefined,
-      bleedMargins: undefined,
-    },
+    defaultValues,
   });
 
-  // Prepopulate or reset the form values when a switch is selected.
-  // For switchType we always use the value extracted from the switch's tag.
-  useEffect(() => {
-    if (selectedSwitch) {
-      const existingConfig = planeData?.switches[selectedSwitch.name];
-      form.reset({
-        switchName: selectedSwitch.name,
-        // Always use the tagged switch type (e.g. "button", "dial", "lever")
-        switchType: selectedSwitch.switchType,
-        movementAxis: existingConfig?.movementAxis || "",
-        switchDescription: existingConfig?.switchDescription || "",
-        movementMode: existingConfig?.movementMode || false,
-        momentarySwitch: existingConfig?.momentarySwitch || false,
-        defaultPosition: existingConfig?.defaultPosition,
-        upperLimit: existingConfig?.upperLimit ?? "",
-        lowerLimit: existingConfig?.lowerLimit ?? "",
-        bleedMargins: existingConfig?.bleedMargins ?? "",
-      });
-    }
-  }, [selectedSwitch, planeData, form]);
-
+  // Watch for momentary switch value for conditional UI.
   const isMomentary = form.watch("momentarySwitch");
+
   const { mutate: createNewSwitch, isPending } = useCreateNewSwitch();
 
   const onSubmit = async (data: FormData) => {
@@ -93,11 +105,11 @@ export function PlaneForm({ selectedSwitch }: PlaneFormProps) {
     }
   };
 
+  console.log(selectedSwitch);
+
   return (
     <Card className="flex flex-col h-full">
-      {/* Wrap everything in the Form provider */}
       <Form {...form}>
-        {/* Make the form cover the whole card */}
         <form
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex flex-col h-full"

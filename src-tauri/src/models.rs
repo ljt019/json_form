@@ -69,3 +69,25 @@ pub struct FullConfigFile {
     pub model_path: String,
     pub switches: HashMap<String, SwitchData>,
 }
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SwitchItem {
+    pub mesh_name: String,
+    pub pretty_name: String,
+    pub is_configured: bool,
+    pub switch_type: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ParsedGLBData {
+    pub switches: Vec<SwitchItem>,
+    pub model_base64: String,
+}
+
+#[derive(Serialize)]
+pub struct PlaneConfigFile {
+    pub file_name: String,
+    pub model_path: String,
+}

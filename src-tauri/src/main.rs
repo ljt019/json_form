@@ -38,11 +38,12 @@ fn main() {
             add_new_switch,
             open_plane_config_folder,
             load_existing_plane_config_files,
-            set_current_json_file,
-            get_current_json_file,
+            set_current_config_file,
+            get_current_config_file,
             create_new_config_file,
-            get_current_file_contents,
-            open_file
+            get_current_config_file_contents,
+            open_file,
+            parse_glb
         ])
         .setup(|app| {
             setup_plane_config_folder(app);

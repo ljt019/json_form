@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
-import type { FormData } from "@/components/form/schema";
+import type { FormData } from "@/screens/switch_editor/components/form/schema";
 import { toast } from "react-hot-toast";
 
 async function createNewSwitch(formData: FormData) {
@@ -29,6 +29,9 @@ export default function useCreateNewSwitch() {
       });
       queryClient.invalidateQueries({
         queryKey: ["selected-config-data"],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["parsed-glb"],
       });
     },
   });

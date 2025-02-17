@@ -23,7 +23,7 @@ interface SwitchData {
 }
 
 async function fetchSelectedConfigData(): Promise<FullConfigFile> {
-  const configData: string = await invoke("get_current_file_contents");
+  const configData: string = await invoke("get_current_config_file_contents");
   return JSON.parse(configData);
 }
 

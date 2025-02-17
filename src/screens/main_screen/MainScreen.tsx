@@ -266,7 +266,7 @@ function SwitchInfoLoader({
 
   const gltf = useGLTF(blobUrl, undefined, undefined, (error) => {
     console.error("GLTF loading error in SwitchInfoLoader:", error);
-    setModelError(error.message);
+    setModelError("Couldn't load the model");
   });
 
   useEffect(() => {
