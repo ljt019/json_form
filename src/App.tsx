@@ -1,11 +1,14 @@
-import { MainScreen, SwitchEditorScreen } from "@/screens";
+import {
+  MainScreen,
+  SwitchEditorScreen,
+  TeleportEditorScreen,
+} from "@/screens";
 
 import {
   HashRouter as Router,
   Routes as RoutesPrimitive,
   Route,
 } from "react-router-dom";
-import TitleBar from "@/components/titlebar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 type Route = {
@@ -21,6 +24,10 @@ const routes: Route[] = [
   {
     path: "/switchEditor",
     element: <SwitchEditorScreen />,
+  },
+  {
+    path: "/teleportEditor",
+    element: <TeleportEditorScreen />,
   },
 ];
 
