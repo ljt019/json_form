@@ -170,17 +170,36 @@ export function SwitchEditorContent({
       .filter((x): x is SwitchItem => x !== null);
   }, [scene, parsedData]);
 
-  // Track which switch the user selected
-  const [selectedSwitch, setSelectedSwitch] = useState<SwitchItem | null>(null);
+  // Track which switches the user selected (multi-select)
+  const [selectedSwitches, setSelectedSwitches] = useState<SwitchItem[]>([]);
 
-  // Derive the displayed switch. Fallback to the first switch in the list if
-  // there's no valid (or available) `selectedSwitch`.
+  // Derive the displayed switch – use the first selected, or fallback to the first in the list
   const displayedSwitch = useMemo(() => {
-    if (selectedSwitch && switchList.includes(selectedSwitch)) {
-      return selectedSwitch;
+    if (selectedSwitches.length > 0) {
+      return selectedSwitches[0];
     }
     return switchList[0] ?? null;
-  }, [selectedSwitch, switchList]);
+  }, [selectedSwitches, switchList]);
+
+  // Callback for selection (receives the switch and whether shift was held)
+  const handleSelectSwitch = (sw: SwitchItem, shiftKey: boolean) => {
+    startTransition(() => {
+      if (shiftKey) {
+        // Toggle selection: add if not selected; remove if already selected.
+        setSelectedSwitches((prev) => {
+          const exists = prev.find((s) => s.name === sw.name);
+          if (exists) {
+            return prev.filter((s) => s.name !== sw.name);
+          } else {
+            return [...prev, sw];
+          }
+        });
+      } else {
+        // Single-click: set only this switch as selected.
+        setSelectedSwitches([sw]);
+      }
+    });
+  };
 
   return (
     <div className="w-full min-h-screen p-4 flex flex-col">
@@ -190,12 +209,8 @@ export function SwitchEditorContent({
             <SwitchList
               onBack={() => navigate("/")}
               switchList={switchList}
-              selectedSwitch={displayedSwitch}
-              onSelectSwitch={(sw) =>
-                startTransition(() => {
-                  setSelectedSwitch(sw);
-                })
-              }
+              selectedSwitches={selectedSwitches}
+              onSelectSwitch={handleSelectSwitch}
               modelError={modelError}
               modelPath={planeData.modelPath}
             />
@@ -205,7 +220,7 @@ export function SwitchEditorContent({
           </div>
         </div>
         <div className="w-2/3">
-          <PlaneForm selectedSwitch={displayedSwitch} />
+          <PlaneForm selectedSwitches={selectedSwitches} />
         </div>
       </div>
     </div>

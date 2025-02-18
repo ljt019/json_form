@@ -22,7 +22,7 @@ pub struct SwitchData {
     pub lower_limit: f32,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum SwitchType {
     Lever,
@@ -31,7 +31,7 @@ pub enum SwitchType {
     Throttle,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum MovementAxis {
     X,
     Y,
@@ -47,7 +47,7 @@ pub enum SoundEffect {
     ThrottleSound,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct NewSwitchSubmission {
     pub switch_type: SwitchType,

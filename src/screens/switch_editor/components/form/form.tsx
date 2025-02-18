@@ -1,3 +1,4 @@
+// planeForm.tsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -28,45 +29,49 @@ import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigDa
 import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen";
 
 interface PlaneFormProps {
-  selectedSwitch: SwitchItem | null;
+  selectedSwitches: SwitchItem[];
 }
 
 /*
-The outer component renders nothing if no switch is selected.
-When a switch is selected, it renders the internal form and
-forces a remount by setting a key based on the switch's name.
+the outer component renders nothing if no switch is selected.
+when at least one switch is selected, it renders the internal form.
 */
-export function PlaneForm({ selectedSwitch }: PlaneFormProps) {
-  if (!selectedSwitch) {
+export function PlaneForm({ selectedSwitches }: PlaneFormProps) {
+  if (selectedSwitches.length === 0) {
     return null;
   }
-  return (
-    <PlaneFormInternal
-      key={selectedSwitch.name}
-      selectedSwitch={selectedSwitch}
-    />
-  );
+  // use a key based on the names of selected switches joined together
+  const key = selectedSwitches.map((sw) => sw.name).join("-");
+  return <PlaneFormInternal key={key} selectedSwitches={selectedSwitches} />;
 }
 
 /*
-The internal form component initializes with default values based
-on the selected switch and configuration data. Using a unique key
-on the parent ensures that this component is re-mounted whenever
-a new switch is selected.
+the internal form component initializes with default values based
+on the selected switches and configuration data.
 */
-function PlaneFormInternal({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
-  // Fetch the current configuration data (which includes switch-specific configs)
+function PlaneFormInternal({
+  selectedSwitches,
+}: {
+  selectedSwitches: SwitchItem[];
+}) {
   const { data: planeData } = useGetSelectedConfigData();
-  const existingConfig = planeData?.switches[selectedSwitch.name];
+  // for a group, if the switches have different configurations,
+  // you might choose to leave the field empty or use a placeholder.
+  const primarySwitch = selectedSwitches[0];
+  const existingConfig = planeData?.switches[primarySwitch.name];
 
-  // Build default values using the selected switch and any existing config.
+  // if more than one switch is selected, set group placeholders for fields that must be unique.
   const defaultValues: FormData = {
-    switchName: selectedSwitch.name,
-    switchType: selectedSwitch.switchType as
-      | "button"
-      | "dial"
-      | "lever"
-      | "throttle",
+    switchName:
+      selectedSwitches.length > 1 ? "GROUP SELECTED" : primarySwitch.name,
+    switchType:
+      selectedSwitches.length > 1
+        ? "GROUP SELECTED"
+        : (primarySwitch.switchType as
+            | "button"
+            | "dial"
+            | "lever"
+            | "throttle"),
     movementAxis: (existingConfig?.movementAxis ?? "") as "X" | "Y" | "Z",
     switchDescription: existingConfig?.switchDescription ?? "",
     movementMode: existingConfig?.movementMode ?? false,
@@ -77,13 +82,11 @@ function PlaneFormInternal({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
     bleedMargins: Number(existingConfig?.bleedMargins ?? 0),
   };
 
-  // Initialize the form with the default values.
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
 
-  // Watch for momentary switch value for conditional UI.
   const isMomentary = form.watch("momentarySwitch");
 
   const { mutate: createNewSwitch, isPending } = useCreateNewSwitch();
@@ -91,7 +94,6 @@ function PlaneFormInternal({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
   const onSubmit = async (data: FormData) => {
     try {
       let validatedData = formSchema.parse(data);
-
       if (
         !validatedData.momentarySwitch &&
         validatedData.defaultPosition === undefined
@@ -99,13 +101,25 @@ function PlaneFormInternal({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
         validatedData = { ...validatedData, defaultPosition: 0 };
       }
 
-      createNewSwitch(validatedData);
+      if (selectedSwitches.length > 1) {
+        // for each selected switch, override the group placeholder values with the actual values.
+        const batchedPayload = selectedSwitches.map((sw) => ({
+          ...validatedData,
+          switchName: sw.name,
+          switchType: sw.switchType,
+        }));
+        createNewSwitch(batchedPayload);
+      } else {
+        createNewSwitch({
+          ...validatedData,
+          switchName: primarySwitch.name,
+          switchType: primarySwitch.switchType,
+        });
+      }
     } catch (error) {
-      console.error("Error submitting form:", error);
+      console.error("error submitting form:", error);
     }
   };
-
-  console.log(selectedSwitch);
 
   return (
     <Card className="flex flex-col h-full">
@@ -115,7 +129,7 @@ function PlaneFormInternal({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
           className="flex flex-col h-full"
         >
           <CardHeader>
-            <CardTitle className="text-2xl font-bold">Switch Config</CardTitle>
+            <CardTitle className="text-2xl font-bold">switch config</CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-auto space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -143,7 +157,7 @@ function PlaneFormInternal({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? "Configuring..." : "Configure Switch"}
+              {isPending ? "configuring..." : "configure switch"}
             </Button>
           </CardFooter>
         </form>

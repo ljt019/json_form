@@ -16,8 +16,8 @@ import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen";
 interface SwitchListProps {
   onBack: () => void;
   switchList: SwitchItem[];
-  selectedSwitch: SwitchItem | null;
-  onSelectSwitch: (switchItem: SwitchItem) => void;
+  selectedSwitches: SwitchItem[];
+  onSelectSwitch: (switchItem: SwitchItem, shiftKey: boolean) => void;
   modelError: string | null;
   modelPath: string;
 }
@@ -25,7 +25,7 @@ interface SwitchListProps {
 export function SwitchList({
   onBack,
   switchList,
-  selectedSwitch,
+  selectedSwitches,
   onSelectSwitch,
   modelError,
   modelPath,
@@ -100,24 +100,29 @@ export function SwitchList({
               </div>
             ) : (
               <ul className="space-y-1">
-                {filteredSwitchList.map((item, index) => (
-                  <li
-                    key={index}
-                    className={`py-2 px-3 rounded-md cursor-pointer transition-colors flex items-center justify-between ${
-                      selectedSwitch?.name === item.name
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-muted"
-                    }`}
-                    onClick={() => onSelectSwitch(item)}
-                  >
-                    <span>{item.name}</span>
-                    {item.isConfigured ? (
-                      <CheckCircle className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <XCircle className="w-5 h-5 text-red-500" />
-                    )}
-                  </li>
-                ))}
+                {filteredSwitchList.map((item, index) => {
+                  const isSelected = selectedSwitches.some(
+                    (s) => s.name === item.name
+                  );
+                  return (
+                    <li
+                      key={index}
+                      className={`py-2 px-3 rounded-md cursor-pointer transition-colors flex items-center justify-between ${
+                        isSelected
+                          ? "bg-primary text-primary-foreground"
+                          : "hover:bg-muted"
+                      }`}
+                      onClick={(e) => onSelectSwitch(item, e.shiftKey)}
+                    >
+                      <span>{item.name}</span>
+                      {item.isConfigured ? (
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <XCircle className="w-5 h-5 text-red-500" />
+                      )}
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
