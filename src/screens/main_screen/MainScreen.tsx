@@ -11,6 +11,7 @@ import {
   FileText,
   CuboidIcon as Cube,
   Sliders,
+  Sparkles,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -348,6 +349,10 @@ function InfoPane() {
     navigate("/switchEditor");
   };
 
+  const handleConfigureTeleportZones = () => {
+    navigate("/teleportEditor");
+  };
+
   if (isLoading) {
     return (
       <Card className="flex items-center justify-center h-full">
@@ -381,14 +386,24 @@ function InfoPane() {
         <Suspense fallback={<div>Loading switch info...</div>}>
           <SwitchInfo planeData={planeData} />
         </Suspense>
-        <Button
-          onClick={handleConfigureSwitches}
-          className="w-full mt-4"
-          size="lg"
-        >
-          <Sliders className="w-5 h-5 mr-2" />
-          Configure Switches
-        </Button>
+        <div className="flex space-x-2">
+          <Button
+            onClick={handleConfigureSwitches}
+            className="w-full mt-4"
+            size="lg"
+          >
+            <Sliders className="w-5 h-5 mr-2" />
+            Configure Switches
+          </Button>
+          <Button
+            onClick={handleConfigureTeleportZones}
+            className="w-full mt-4"
+            size="lg"
+          >
+            <Sparkles className="w-5 h-5 mr-2" />
+            Configure Teleports
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
