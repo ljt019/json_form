@@ -64,9 +64,19 @@ pub struct NewSwitchSubmission {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct NewTeleportZoneSubmission {
+    pub teleport_zone_name: String,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct FullConfigFile {
     pub plane_name: String,
     pub model_path: String,
+    pub teleport_zones: HashMap<String, TeleportZone>,
     pub switches: HashMap<String, SwitchData>,
 }
 
@@ -90,4 +100,12 @@ pub struct ParsedGLBData {
 pub struct PlaneConfigFile {
     pub file_name: String,
     pub model_path: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TeleportZone {
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
 }

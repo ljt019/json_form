@@ -33,6 +33,7 @@ pub fn create_new_config_file(
     let initial_content = serde_json::json!({
         "planeName": plane_name,
         "modelPath": model_file_path,
+        "teleportZones": {},
         "switches": {}
     });
 

@@ -1,6 +1,13 @@
 {
   "modelPath": "C:/Users/lucie/Downloads/BetaFlixLightAircraft.glb",
   "planeName": "b-52",
+  "teleportZones": {
+    "Zone1": {
+      "x": 0,
+      "y": 1,
+      "z": 2
+    }
+  },
   "switches": {
     "CenterDial1": {
       "bleedMargins": 0.5,

@@ -36,6 +36,7 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             add_new_switch,
+            add_new_teleport_zone,
             open_plane_config_folder,
             load_existing_plane_config_files,
             set_current_config_file,

@@ -4,6 +4,13 @@ import { invoke } from "@tauri-apps/api/core";
 export interface FullConfigFile {
   planeName: string;
   modelPath: string;
+  teleportZones: {
+    [key: string]: {
+      x: number;
+      y: number;
+      z: number;
+    };
+  };
   switches: {
     [key: string]: SwitchData;
   };

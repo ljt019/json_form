@@ -47,7 +47,7 @@ export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
   const handleFileExplorer = async () => {
     const selected = await open({
       multiple: false,
-      filters: [{ name: "Model Files", extensions: ["*"] }],
+      filters: [{ name: "Model Files", extensions: [".glb"] }],
     });
     if (selected && !Array.isArray(selected)) {
       onFileSelect(selected);
