@@ -165,6 +165,7 @@ export function UpperLimitField({ control }: FieldProps) {
             <Input
               placeholder="90.0"
               type="number"
+              step="any"
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
@@ -191,6 +192,7 @@ export function LowerLimitField({ control }: FieldProps) {
             <Input
               placeholder="0.0"
               type="number"
+              step="any"
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
@@ -217,6 +219,7 @@ export function BleedMarginsField({ control }: FieldProps) {
             <Input
               placeholder="0.5"
               type="number"
+              step="any"
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
@@ -271,6 +274,7 @@ export function DefaultPositionField({ control }: FieldProps) {
             <Input
               placeholder="45.0"
               type="number"
+              step="any"
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
