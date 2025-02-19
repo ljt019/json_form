@@ -13,7 +13,7 @@ import { SwitchList } from "@/screens/switch_editor/components/switch-list-card"
 import { SwitchModelPreview } from "@/screens/switch_editor/components/switch-model-preview-card";
 
 /*
-Main Screen Component
+main screen component
 */
 
 export interface SwitchItem {
@@ -31,7 +31,7 @@ export function SwitchEditorScreen() {
           fallback={
             <Card className="h-full">
               <CardContent className="flex items-center justify-center h-full">
-                Loading 3D model…
+                loading 3d model…
               </CardContent>
             </Card>
           }
@@ -44,7 +44,7 @@ export function SwitchEditorScreen() {
 }
 
 /* 
-  DATA LOADER
+  data loader
 */
 
 function DataLoader({
@@ -72,7 +72,7 @@ function DataLoader({
     return (
       <Card className="h-full">
         <CardContent className="flex items-center justify-center h-full">
-          Loading config data…
+          loading config data…
         </CardContent>
       </Card>
     );
@@ -81,7 +81,7 @@ function DataLoader({
     return (
       <Card className="h-full">
         <CardContent className="flex items-center justify-center h-full text-destructive">
-          Error loading config data: {planeError.message}
+          error loading config data: {planeError.message}
         </CardContent>
       </Card>
     );
@@ -90,7 +90,7 @@ function DataLoader({
     return (
       <Card className="h-full">
         <CardContent className="flex items-center justify-center h-full text-muted-foreground">
-          No model path provided.
+          no model path provided.
         </CardContent>
       </Card>
     );
@@ -99,7 +99,7 @@ function DataLoader({
     return (
       <Card className="h-full">
         <CardContent className="flex items-center justify-center h-full">
-          Loading parsed GLB data…
+          loading parsed glb data…
         </CardContent>
       </Card>
     );
@@ -108,7 +108,7 @@ function DataLoader({
     return (
       <Card className="h-full">
         <CardContent className="flex items-center justify-center h-full text-destructive">
-          Error parsing GLB: {parsedError.message}
+          error parsing glb: {parsedError.message}
         </CardContent>
       </Card>
     );
@@ -117,7 +117,7 @@ function DataLoader({
     return (
       <Card className="h-full">
         <CardContent className="flex items-center justify-center h-full">
-          No parsed GLB data available.
+          no parsed glb data available.
         </CardContent>
       </Card>
     );
@@ -127,7 +127,7 @@ function DataLoader({
 }
 
 /* 
-  SWITCH EDITOR CONTENT
+  switch editor content
 */
 
 export function SwitchEditorContent({
@@ -140,18 +140,18 @@ export function SwitchEditorContent({
   const navigate = useNavigate();
   const [modelError, setModelError] = useState<string | null>(null);
 
-  // Load glTF
+  // load gltf
   const { scene } = useGLTF(
     parsedData.blobUrl,
     undefined,
     undefined,
     (error) => {
-      console.error("GLTF loading error:", error);
-      setModelError("GLTF loading error");
+      console.error("gltf loading error:", error);
+      setModelError("gltf loading error");
     }
   ) as unknown as { scene: THREE.Scene };
 
-  // Create switch list from the loaded scene
+  // create switch list from the loaded scene
   const switchList: SwitchItem[] = useMemo(() => {
     if (!scene) return [];
     return (parsedData.switches || [])
@@ -170,10 +170,11 @@ export function SwitchEditorContent({
       .filter((x): x is SwitchItem => x !== null);
   }, [scene, parsedData]);
 
-  // Track which switches the user selected (multi-select)
+  // track which switches the user selected (multi-select)
   const [selectedSwitches, setSelectedSwitches] = useState<SwitchItem[]>([]);
+  const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
 
-  // Derive the displayed switch – use the first selected, or fallback to the first in the list
+  // derive the displayed switch – use the first selected, or fallback to the first in the list
   const displayedSwitch = useMemo(() => {
     if (selectedSwitches.length > 0) {
       return selectedSwitches[0];
@@ -181,22 +182,52 @@ export function SwitchEditorContent({
     return switchList[0] ?? null;
   }, [selectedSwitches, switchList]);
 
-  // Callback for selection (receives the switch and whether shift was held)
-  const handleSelectSwitch = (sw: SwitchItem, shiftKey: boolean) => {
+  // callback for selection (receives the switch and whether shift/ctrl were held)
+  const handleSelectSwitch = (
+    sw: SwitchItem,
+    shiftKey: boolean,
+    ctrlKey: boolean
+  ) => {
+    const currentIndex = switchList.findIndex((s) => s.name === sw.name);
     startTransition(() => {
       if (shiftKey) {
-        // Toggle selection: add if not selected; remove if already selected.
+        if (anchorIndex !== null) {
+          const start = Math.min(anchorIndex, currentIndex);
+          const end = Math.max(anchorIndex, currentIndex);
+          const range = switchList.slice(start, end + 1);
+          if (ctrlKey) {
+            // add the range to the existing selection
+            setSelectedSwitches((prev) => {
+              const newSelection = [...prev];
+              range.forEach((item) => {
+                if (!newSelection.some((s) => s.name === item.name)) {
+                  newSelection.push(item);
+                }
+              });
+              return newSelection;
+            });
+          } else {
+            // replace selection with the range
+            setSelectedSwitches(range);
+          }
+        } else {
+          // no anchor set; fallback to single selection
+          setSelectedSwitches([sw]);
+        }
+        setAnchorIndex(currentIndex);
+      } else if (ctrlKey) {
+        // toggle the clicked item without affecting the rest
         setSelectedSwitches((prev) => {
           const exists = prev.find((s) => s.name === sw.name);
-          if (exists) {
-            return prev.filter((s) => s.name !== sw.name);
-          } else {
-            return [...prev, sw];
-          }
+          return exists
+            ? prev.filter((s) => s.name !== sw.name)
+            : [...prev, sw];
         });
+        setAnchorIndex(currentIndex);
       } else {
-        // Single-click: set only this switch as selected.
+        // no modifier: single selection
         setSelectedSwitches([sw]);
+        setAnchorIndex(currentIndex);
       }
     });
   };

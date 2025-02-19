@@ -17,7 +17,11 @@ interface SwitchListProps {
   onBack: () => void;
   switchList: SwitchItem[];
   selectedSwitches: SwitchItem[];
-  onSelectSwitch: (switchItem: SwitchItem, shiftKey: boolean) => void;
+  onSelectSwitch: (
+    switchItem: SwitchItem,
+    shiftKey: boolean,
+    ctrlKey: boolean
+  ) => void;
   modelError: string | null;
   modelPath: string;
 }
@@ -49,9 +53,9 @@ export function SwitchList({
     return (
       <Card className="h-full">
         <CardContent className="flex flex-col items-center justify-center h-full text-destructive">
-          <p>Error loading 3D model: {modelError}</p>
+          <p>error loading 3d model: {modelError}</p>
           <p className="text-muted-foreground">
-            Model path: {modelPath || "Not provided"}
+            model path: {modelPath || "not provided"}
           </p>
         </CardContent>
       </Card>
@@ -64,7 +68,7 @@ export function SwitchList({
         <div className="flex items-center justify-between">
           <CardTitle className="text-2xl font-bold flex items-center">
             <FileText className="w-6 h-6 mr-2" />
-            Switch List
+            switch list
           </CardTitle>
           <Button
             variant="ghost"
@@ -73,7 +77,7 @@ export function SwitchList({
             className="flex items-center"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
+            back
           </Button>
         </div>
       </CardHeader>
@@ -83,7 +87,7 @@ export function SwitchList({
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
             <Input
               type="text"
-              placeholder="Search switches..."
+              placeholder="search switches..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
@@ -95,8 +99,8 @@ export function SwitchList({
             {filteredSwitchList.length === 0 ? (
               <div className="py-4 text-center text-muted-foreground">
                 {searchTerm
-                  ? "No matches found."
-                  : "No switches found in the model."}
+                  ? "no matches found."
+                  : "no switches found in the model."}
               </div>
             ) : (
               <ul className="space-y-1">
@@ -107,12 +111,14 @@ export function SwitchList({
                   return (
                     <li
                       key={index}
-                      className={`py-2 px-3 rounded-md cursor-pointer transition-colors flex items-center justify-between ${
+                      className={`py-2 px-3 rounded-md select-none cursor-pointer transition-colors flex items-center justify-between ${
                         isSelected
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-muted"
                       }`}
-                      onClick={(e) => onSelectSwitch(item, e.shiftKey)}
+                      onClick={(e) =>
+                        onSelectSwitch(item, e.shiftKey, e.ctrlKey)
+                      }
                     >
                       <span>{item.name}</span>
                       {item.isConfigured ? (
