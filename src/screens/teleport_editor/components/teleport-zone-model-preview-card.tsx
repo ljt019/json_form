@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, useGLTF } from "@react-three/drei";
-import type * as THREE from "three";
+import * as THREE from "three";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,40 +22,30 @@ export function TeleportZoneModelPreview({
   );
   const { mutate: createTeleportZone } = useCreateNewTeleportZone();
   const modelRef = useRef<THREE.Group>(null);
-  const [localPoint, setLocalPoint] = useState<THREE.Vector3 | null>(null);
 
-  const handleModelClick = (point: THREE.Vector3) => {
+  // our click handler: transforms world -> local, rounds, and submits.
+  const handleClick = (point: THREE.Vector3) => {
     if (!isCreating) return;
     if (!modelRef.current) {
       console.error("Model reference not available");
       return;
     }
-    // Transform the clicked world point to model-local coordinates
-    const newLocalPoint = modelRef.current.worldToLocal(point.clone());
-    setLocalPoint(newLocalPoint);
-  };
-
-  React.useEffect(() => {
-    if (!isCreating || !localPoint) return;
-
+    const localPoint = modelRef.current.worldToLocal(point.clone());
     const x = Number.parseFloat(localPoint.x.toFixed(2));
     const y = Number.parseFloat(localPoint.y.toFixed(2));
     const z = Number.parseFloat(localPoint.z.toFixed(2));
-
     const zoneData = { teleportZoneName: newZoneName, x, y, z };
-
     createTeleportZone(zoneData, {
       onSuccess: () => {
         setInstruction("Teleport zone created successfully");
         setIsCreating(false);
         setNewZoneName("");
-        setLocalPoint(null);
       },
       onError: () => {
         setInstruction("Failed to create teleport zone");
       },
     });
-  }, [isCreating, createTeleportZone, newZoneName, localPoint]);
+  };
 
   return (
     <Card className="h-full flex flex-col">
@@ -100,21 +90,47 @@ export function TeleportZoneModelPreview({
           )}
         </div>
         <div className="flex-grow relative">
-          <Canvas camera={{ position: [0, 5, 10], fov: 60 }}>
+          <Canvas camera={{ position: [0, 5, 10], fov: 60 }} className="h-full">
             <ambientLight intensity={0.5} />
             <pointLight position={[10, 10, 10]} />
-            <OrbitControls enabled={!isCreating} />
+            <OrbitControls />
             <SelectableModel
               blobUrl={blobUrl}
               ref={modelRef}
-              onClick={handleModelClick}
+              onClick={handleClick}
             />
-            <ClickPlane onClick={handleModelClick} />
+            <ClickPlane onClick={handleClick} />
           </Canvas>
         </div>
       </CardContent>
     </Card>
   );
+}
+
+// helper hook to track pointer down/up
+function useClickDetector(
+  onClick: (point: THREE.Vector3) => void,
+  threshold = 5
+) {
+  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = (e: any) => {
+    pointerDownRef.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const handlePointerUp = (e: any, point: THREE.Vector3) => {
+    if (pointerDownRef.current) {
+      const dx = e.clientX - pointerDownRef.current.x;
+      const dy = e.clientY - pointerDownRef.current.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < threshold) {
+        onClick(point);
+      }
+    }
+    pointerDownRef.current = null;
+  };
+
+  return { handlePointerDown, handlePointerUp };
 }
 
 type SelectableModelProps = {
@@ -125,13 +141,18 @@ type SelectableModelProps = {
 const SelectableModel = React.forwardRef<THREE.Group, SelectableModelProps>(
   ({ blobUrl, onClick }, ref) => {
     const { scene } = useGLTF(blobUrl);
+    const { handlePointerDown, handlePointerUp } = useClickDetector(onClick);
     return (
       <primitive
         object={scene}
         ref={ref}
         onPointerDown={(e) => {
           e.stopPropagation();
-          onClick(e.point);
+          handlePointerDown(e);
+        }}
+        onPointerUp={(e) => {
+          e.stopPropagation();
+          handlePointerUp(e, e.point);
         }}
       />
     );
@@ -144,13 +165,18 @@ type ClickPlaneProps = {
 };
 
 function ClickPlane({ onClick }: ClickPlaneProps) {
+  const { handlePointerDown, handlePointerUp } = useClickDetector(onClick);
   return (
     <mesh
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, 0, 0]}
       onPointerDown={(e) => {
         e.stopPropagation();
-        onClick(e.point);
+        handlePointerDown(e);
+      }}
+      onPointerUp={(e) => {
+        e.stopPropagation();
+        handlePointerUp(e, e.point);
       }}
     >
       <planeGeometry args={[100, 100]} />
