@@ -11,7 +11,7 @@ export type TeleportZoneFormData = {
 
 async function createNewTeleportZone(formData: TeleportZoneFormData) {
   // swap y and z before submitting since threejs is y-up and not z-up like unreal
-  const swappedData = { ...formData, y: formData.z, z: formData.y };
+  const swappedData = { ...formData, y: -formData.z, z: formData.y };
   try {
     await invoke("add_new_teleport_zone", { formData: swappedData });
   } catch (error) {
