@@ -1,11 +1,11 @@
-// TeleportEditorScreen.tsx
-import { useState, useMemo, Suspense } from "react";
+import { useMemo, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
-import { Card, CardContent } from "@/components/ui/card";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
 import { useParsedGLBData } from "@/hooks/queries/useParsedGLBData";
 import { TeleportZoneList } from "./components/teleport-zone-list-card";
-import { TeleportZoneModelPreview } from "./components/teleport-zone-model-preview-card";
+import { TeleportZonePreview } from "./components/teleport-zone-model-preview-card";
+import { useTeleportZoneSelection } from "@/hooks/useTeleportZoneSelection";
+import { Card, CardContent } from "@/components/ui/card";
 
 export interface TeleportZoneItem {
   name: string;
@@ -14,26 +14,40 @@ export interface TeleportZoneItem {
   z: number;
 }
 
+interface LoadingCardProps {
+  message: string;
+  variant?: "default" | "error" | "muted";
+}
+
+function LoadingCard({ message, variant = "default" }: LoadingCardProps) {
+  const textColorClass = {
+    default: "",
+    error: "text-destructive",
+    muted: "text-muted-foreground",
+  }[variant];
+
+  return (
+    <Card className="h-full">
+      <CardContent
+        className={`flex items-center justify-center h-full ${textColorClass}`}
+      >
+        {message}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function TeleportEditorScreen() {
   return (
     <ErrorBoundary
       fallback={
-        <Card className="h-full">
-          <CardContent className="flex items-center justify-center h-full text-destructive">
-            Something went wrong loading the editor.
-          </CardContent>
-        </Card>
+        <LoadingCard
+          message="Something went wrong loading the editor."
+          variant="error"
+        />
       }
     >
-      <Suspense
-        fallback={
-          <Card className="h-full">
-            <CardContent className="flex items-center justify-center h-full">
-              Loading editor...
-            </CardContent>
-          </Card>
-        }
-      >
+      <Suspense fallback={<LoadingCard message="Loading editor..." />}>
         <TeleportEditorContent />
       </Suspense>
     </ErrorBoundary>
@@ -43,14 +57,15 @@ export function TeleportEditorScreen() {
 function TeleportEditorContent() {
   const { data: planeData } = useGetSelectedConfigData();
   const { data: parsedData } = useParsedGLBData(planeData?.modelPath ?? "");
-  const [selectedTeleportZones, setSelectedTeleportZones] = useState<
-    TeleportZoneItem[]
-  >([]);
-  const [hoveredTeleportZone, setHoveredTeleportZone] =
-    useState<TeleportZoneItem | null>(null);
+  const {
+    selectedTeleportZones,
+    hoveredTeleportZone,
+    handleSelectTeleportZone,
+    handleHoverTeleportZone,
+  } = useTeleportZoneSelection();
 
   // Convert teleport zones from planeData
-  const teleportZoneList: TeleportZoneItem[] = useMemo(() => {
+  const teleportZoneList = useMemo(() => {
     const zones = planeData?.teleportZones || {};
     return Object.keys(zones).map((key) => ({
       name: key,
@@ -60,33 +75,12 @@ function TeleportEditorContent() {
     }));
   }, [planeData]);
 
-  const handleSelectTeleportZone = (
-    zone: TeleportZoneItem,
-    shiftKey: boolean
-  ) => {
-    if (shiftKey) {
-      setSelectedTeleportZones((prev) => {
-        const exists = prev.some((item) => item.name === zone.name);
-        return exists
-          ? prev.filter((item) => item.name !== zone.name)
-          : [...prev, zone];
-      });
-    } else {
-      setSelectedTeleportZones([zone]);
-    }
-  };
-
-  const handleHoverTeleportZone = (zone: TeleportZoneItem | null) => {
-    setHoveredTeleportZone(zone);
-  };
-
   if (!planeData?.modelPath) {
     return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full text-muted-foreground">
-          Please select or create a plane configuration.
-        </CardContent>
-      </Card>
+      <LoadingCard
+        message="Please select or create a plane configuration."
+        variant="muted"
+      />
     );
   }
 
@@ -104,7 +98,7 @@ function TeleportEditorContent() {
           </div>
         </div>
         <div className="w-2/3 h-[calc(100vh-2rem)]">
-          <TeleportZoneModelPreview
+          <TeleportZonePreview
             blobUrl={parsedData.blobUrl}
             teleportZones={teleportZoneList}
             selectedTeleportZones={selectedTeleportZones}
