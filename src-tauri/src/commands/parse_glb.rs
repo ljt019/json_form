@@ -53,18 +53,25 @@ pub async fn parse_glb(app_handle: tauri::AppHandle) -> Result<ParsedGLBData, St
         state.current_json_file.clone()
     };
 
+    if current_file.is_empty() {
+        return Ok(ParsedGLBData {
+            switches: vec![],
+            model_base64: "".to_string(),
+        });
+    }
+
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
-        .map_err(|e| format!("Couldn't find app data directory: {}", e))?;
+        .map_err(|e| format!("couldn't find app data directory: {}", e))?;
     let plane_config_folder_path = app_data_dir.join(OUTPUT_FOLDER_PATH);
     let current_json_file_path = plane_config_folder_path.join(&current_file);
 
     let file_contents = fs::read_to_string(&current_json_file_path)
-        .map_err(|e| format!("Failed to read config file: {}", e))?;
+        .map_err(|e| format!("failed to read config file: {}", e))?;
 
     let json_value: serde_json::Value = serde_json::from_str(&file_contents)
-        .map_err(|e| format!("Failed to parse config JSON: {}", e))?;
+        .map_err(|e| format!("failed to parse config JSON: {}", e))?;
 
     let model_path = json_value
         .get("modelPath")
@@ -92,7 +99,7 @@ pub async fn parse_glb(app_handle: tauri::AppHandle) -> Result<ParsedGLBData, St
         }
     }
 
-    println!("parse_glb: Found {} switch(es).", switches.len());
+    println!("parse_glb: found {} switch(es).", switches.len());
 
     Ok(ParsedGLBData {
         switches,

@@ -1,34 +1,55 @@
-import React, { useState, useMemo, Suspense } from "react";
-import { useNavigate } from "react-router-dom";
+// TeleportEditorScreen.tsx
+import { useState, useMemo, Suspense } from "react";
+import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardContent } from "@/components/ui/card";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
 import { useParsedGLBData } from "@/hooks/queries/useParsedGLBData";
-import {
-  TeleportZoneList,
-  type TeleportZoneItem,
-} from "./components/teleport-zone-list-card";
+import { TeleportZoneList } from "./components/teleport-zone-list-card";
 import { TeleportZoneModelPreview } from "./components/teleport-zone-model-preview-card";
 
+export interface TeleportZoneItem {
+  name: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
 export function TeleportEditorScreen() {
-  const navigate = useNavigate();
+  return (
+    <ErrorBoundary
+      fallback={
+        <Card className="h-full">
+          <CardContent className="flex items-center justify-center h-full text-destructive">
+            Something went wrong loading the editor.
+          </CardContent>
+        </Card>
+      }
+    >
+      <Suspense
+        fallback={
+          <Card className="h-full">
+            <CardContent className="flex items-center justify-center h-full">
+              Loading editor...
+            </CardContent>
+          </Card>
+        }
+      >
+        <TeleportEditorContent />
+      </Suspense>
+    </ErrorBoundary>
+  );
+}
+
+function TeleportEditorContent() {
+  const { data: planeData } = useGetSelectedConfigData();
+  const { data: parsedData } = useParsedGLBData(planeData?.modelPath ?? "");
   const [selectedTeleportZones, setSelectedTeleportZones] = useState<
     TeleportZoneItem[]
   >([]);
+  const [hoveredTeleportZone, setHoveredTeleportZone] =
+    useState<TeleportZoneItem | null>(null);
 
-  // call hooks unconditionally
-  const {
-    data: planeData,
-    isLoading: isPlaneLoading,
-    error: planeError,
-  } = useGetSelectedConfigData();
-  const modelPath = planeData?.modelPath ?? "";
-  const {
-    data: parsedData,
-    isLoading: isParsedLoading,
-    error: parsedError,
-  } = useParsedGLBData(modelPath);
-
-  // always compute teleportZoneList even if planeData is not ready
+  // Convert teleport zones from planeData
   const teleportZoneList: TeleportZoneItem[] = useMemo(() => {
     const zones = planeData?.teleportZones || {};
     return Object.keys(zones).map((key) => ({
@@ -55,38 +76,15 @@ export function TeleportEditorScreen() {
     }
   };
 
-  if (isPlaneLoading || !planeData) {
+  const handleHoverTeleportZone = (zone: TeleportZoneItem | null) => {
+    setHoveredTeleportZone(zone);
+  };
+
+  if (!planeData?.modelPath) {
     return (
-      <Card className="min-h-screen">
-        <CardContent className="flex items-center justify-center h-full">
-          Loading config data…
-        </CardContent>
-      </Card>
-    );
-  }
-  if (planeError) {
-    return (
-      <Card className="min-h-screen">
-        <CardContent className="flex items-center justify-center h-full text-destructive">
-          Error loading config data: {planeError.message}
-        </CardContent>
-      </Card>
-    );
-  }
-  if (isParsedLoading || !parsedData) {
-    return (
-      <Card className="min-h-screen">
-        <CardContent className="flex items-center justify-center h-full">
-          Loading parsed GLB data…
-        </CardContent>
-      </Card>
-    );
-  }
-  if (parsedError) {
-    return (
-      <Card className="min-h-screen">
-        <CardContent className="flex items-center justify-center h-full text-destructive">
-          Error parsing GLB: {parsedError.message}
+      <Card className="h-full">
+        <CardContent className="flex items-center justify-center h-full text-muted-foreground">
+          Please select or create a plane configuration.
         </CardContent>
       </Card>
     );
@@ -98,25 +96,19 @@ export function TeleportEditorScreen() {
         <div className="w-1/3 flex flex-col gap-6 h-[calc(100vh-2rem)]">
           <div className="flex-1 min-h-0">
             <TeleportZoneList
-              onBack={() => navigate("/")}
               teleportZoneList={teleportZoneList}
               selectedTeleportZones={selectedTeleportZones}
               onSelectTeleportZone={handleSelectTeleportZone}
+              onHoverTeleportZone={handleHoverTeleportZone}
             />
           </div>
         </div>
         <div className="w-2/3 h-[calc(100vh-2rem)]">
-          <Suspense
-            fallback={
-              <Card className="h-full">
-                <CardContent className="flex items-center justify-center h-full">
-                  Loading model…
-                </CardContent>
-              </Card>
-            }
-          >
-            <TeleportZoneModelPreview blobUrl={parsedData.blobUrl} />
-          </Suspense>
+          <TeleportZoneModelPreview
+            blobUrl={parsedData.blobUrl}
+            teleportZones={teleportZoneList}
+            selectedTeleportZones={selectedTeleportZones}
+          />
         </div>
       </div>
     </div>

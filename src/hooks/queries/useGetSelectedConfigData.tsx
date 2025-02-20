@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 export interface FullConfigFile {
@@ -35,7 +35,7 @@ async function fetchSelectedConfigData(): Promise<FullConfigFile> {
 }
 
 export function useGetSelectedConfigData() {
-  return useQuery<FullConfigFile>({
+  return useSuspenseQuery<FullConfigFile>({
     queryKey: ["selected-config-data"],
     queryFn: fetchSelectedConfigData,
   });

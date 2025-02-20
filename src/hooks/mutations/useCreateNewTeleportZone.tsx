@@ -19,7 +19,7 @@ async function createNewTeleportZone(formData: TeleportZoneFormData) {
   }
 }
 
-export default function useCreateNewTeleportZone() {
+export function useCreateNewTeleportZone() {
   const queryClient = useQueryClient();
 
   return useMutation({

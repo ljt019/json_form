@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 type FileName = string;
@@ -10,7 +10,7 @@ async function fetchSelectedFile() {
 }
 
 export function useGetSelectedFile() {
-  return useQuery<FileName>({
+  return useSuspenseQuery<FileName>({
     queryKey: ["selected-file"],
     queryFn: fetchSelectedFile,
   });

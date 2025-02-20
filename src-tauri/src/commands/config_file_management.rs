@@ -73,29 +73,35 @@ pub fn get_current_config_file_contents(app_handle: tauri::AppHandle) -> Result<
     let state = app_handle.state::<std::sync::Mutex<crate::AppData>>();
     let state = state.lock().unwrap();
 
+    if state.current_json_file.is_empty() {
+        let default_config = serde_json::json!({
+            "planeName": "",
+            "modelPath": "",
+            "teleportZones": {},
+            "switches": {}
+        });
+        return serde_json::to_string_pretty(&default_config)
+            .map_err(|e| format!("failed to serialize default config: {}", e));
+    }
+
     let current_json_file_name = state.current_json_file.clone();
 
     let app_data_dir = app_handle
         .path()
         .app_data_dir()
-        .expect("Couldn't find app_data_dir");
+        .expect("couldn't find app_data_dir");
 
     let plane_config_folder_path = app_data_dir.join(crate::OUTPUT_FOLDER_PATH);
     let current_json_file_path = plane_config_folder_path.join(current_json_file_name);
 
-    // Read the file contents
-    let file_contents = fs::read_to_string(current_json_file_path)
-        .map_err(|e| format!("Failed to read file: {}", e))?;
+    let file_contents = std::fs::read_to_string(current_json_file_path)
+        .map_err(|e| format!("failed to read file: {}", e))?;
 
-    // Parse the JSON contents into our FullConfigFile struct
-    let config_file: FullConfigFile =
-        serde_json::from_str(&file_contents).map_err(|e| format!("Failed to parse JSON: {}", e))?;
+    let config_file: FullConfigFile = serde_json::from_str(&file_contents)
+        .map_err(|e| format!("failed to parse json: {}", e))?;
 
-    // Serialize the struct back to a JSON string
-    let json_output = serde_json::to_string_pretty(&config_file)
-        .map_err(|e| format!("Failed to serialize to JSON: {}", e))?;
-
-    Ok(json_output)
+    serde_json::to_string_pretty(&config_file)
+        .map_err(|e| format!("failed to serialize to json: {}", e))
 }
 
 #[tauri::command]

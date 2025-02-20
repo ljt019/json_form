@@ -1,20 +1,15 @@
-import React, { useState, useMemo, startTransition, Suspense } from "react";
+import { useState, useMemo, startTransition, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-
 import { Card, CardContent } from "@/components/ui/card";
+import { ErrorBoundary } from "react-error-boundary";
 
 import { PlaneForm } from "@/screens/switch_editor/components/form/form";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
 import { useParsedGLBData } from "@/hooks/queries/useParsedGLBData";
-
 import { SwitchList } from "@/screens/switch_editor/components/switch-list-card";
 import { SwitchModelPreview } from "@/screens/switch_editor/components/switch-model-preview-card";
-
-/*
-main screen component
-*/
 
 export interface SwitchItem {
   name: string;
@@ -25,133 +20,50 @@ export interface SwitchItem {
 
 export function SwitchEditorScreen() {
   return (
-    <DataLoader>
-      {(planeData, parsedData) => (
-        <Suspense
-          fallback={
-            <Card className="h-full">
-              <CardContent className="flex items-center justify-center h-full">
-                loading 3d model…
-              </CardContent>
-            </Card>
-          }
-        >
-          <SwitchEditorContent planeData={planeData} parsedData={parsedData} />
-        </Suspense>
-      )}
-    </DataLoader>
+    <ErrorBoundary
+      fallback={
+        <Card className="h-full">
+          <CardContent className="flex items-center justify-center h-full text-destructive">
+            Something went wrong loading the editor.
+          </CardContent>
+        </Card>
+      }
+    >
+      <Suspense
+        fallback={
+          <Card className="h-full">
+            <CardContent className="flex items-center justify-center h-full">
+              Loading editor...
+            </CardContent>
+          </Card>
+        }
+      >
+        <SwitchEditorContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
-/* 
-  data loader
-*/
-
-function DataLoader({
-  children,
-}: {
-  children: (
-    planeData: any,
-    parsedData: { switches: any[]; blobUrl: string }
-  ) => React.ReactNode;
-}) {
-  const {
-    data: planeData,
-    isLoading: isPlaneLoading,
-    error: planeError,
-  } = useGetSelectedConfigData();
-
-  const modelPath = planeData?.modelPath ?? "";
-  const {
-    data: parsedData,
-    isLoading: isParsedLoading,
-    error: parsedError,
-  } = useParsedGLBData(modelPath);
-
-  if (isPlaneLoading) {
-    return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full">
-          loading config data…
-        </CardContent>
-      </Card>
-    );
-  }
-  if (planeError) {
-    return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full text-destructive">
-          error loading config data: {planeError.message}
-        </CardContent>
-      </Card>
-    );
-  }
-  if (!planeData?.modelPath) {
-    return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full text-muted-foreground">
-          no model path provided.
-        </CardContent>
-      </Card>
-    );
-  }
-  if (isParsedLoading) {
-    return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full">
-          loading parsed glb data…
-        </CardContent>
-      </Card>
-    );
-  }
-  if (parsedError) {
-    return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full text-destructive">
-          error parsing glb: {parsedError.message}
-        </CardContent>
-      </Card>
-    );
-  }
-  if (!parsedData) {
-    return (
-      <Card className="h-full">
-        <CardContent className="flex items-center justify-center h-full">
-          no parsed glb data available.
-        </CardContent>
-      </Card>
-    );
-  }
-
-  return <>{children(planeData, parsedData)}</>;
-}
-
-/* 
-  switch editor content
-*/
-
-export function SwitchEditorContent({
-  planeData,
-  parsedData,
-}: {
-  planeData: any;
-  parsedData: { switches: any[]; blobUrl: string };
-}) {
+function SwitchEditorContent() {
   const navigate = useNavigate();
   const [modelError, setModelError] = useState<string | null>(null);
 
-  // load gltf
+  // Data fetching with Suspense
+  const { data: planeData } = useGetSelectedConfigData();
+  const { data: parsedData } = useParsedGLBData(planeData.modelPath);
+
+  // Load GLTF
   const { scene } = useGLTF(
     parsedData.blobUrl,
     undefined,
     undefined,
     (error) => {
-      console.error("gltf loading error:", error);
-      setModelError("gltf loading error");
+      console.error("GLTF loading error:", error);
+      setModelError("GLTF loading error");
     }
   ) as unknown as { scene: THREE.Scene };
 
-  // create switch list from the loaded scene
+  // Create switch list from the loaded scene
   const switchList: SwitchItem[] = useMemo(() => {
     if (!scene) return [];
     return (parsedData.switches || [])
@@ -170,11 +82,9 @@ export function SwitchEditorContent({
       .filter((x): x is SwitchItem => x !== null);
   }, [scene, parsedData]);
 
-  // track which switches the user selected (multi-select)
   const [selectedSwitches, setSelectedSwitches] = useState<SwitchItem[]>([]);
   const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
 
-  // derive the displayed switch – use the first selected, or fallback to the first in the list
   const displayedSwitch = useMemo(() => {
     if (selectedSwitches.length > 0) {
       return selectedSwitches[0];
@@ -182,7 +92,6 @@ export function SwitchEditorContent({
     return switchList[0] ?? null;
   }, [selectedSwitches, switchList]);
 
-  // callback for selection (receives the switch and whether shift/ctrl were held)
   const handleSelectSwitch = (
     sw: SwitchItem,
     shiftKey: boolean,
@@ -196,7 +105,6 @@ export function SwitchEditorContent({
           const end = Math.max(anchorIndex, currentIndex);
           const range = switchList.slice(start, end + 1);
           if (ctrlKey) {
-            // add the range to the existing selection
             setSelectedSwitches((prev) => {
               const newSelection = [...prev];
               range.forEach((item) => {
@@ -207,16 +115,13 @@ export function SwitchEditorContent({
               return newSelection;
             });
           } else {
-            // replace selection with the range
             setSelectedSwitches(range);
           }
         } else {
-          // no anchor set; fallback to single selection
           setSelectedSwitches([sw]);
         }
         setAnchorIndex(currentIndex);
       } else if (ctrlKey) {
-        // toggle the clicked item without affecting the rest
         setSelectedSwitches((prev) => {
           const exists = prev.find((s) => s.name === sw.name);
           return exists
@@ -225,7 +130,6 @@ export function SwitchEditorContent({
         });
         setAnchorIndex(currentIndex);
       } else {
-        // no modifier: single selection
         setSelectedSwitches([sw]);
         setAnchorIndex(currentIndex);
       }

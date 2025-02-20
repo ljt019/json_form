@@ -1,30 +1,28 @@
+"use client";
+
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { FileText, ArrowLeft, Search } from "lucide-react";
-
-export interface TeleportZoneItem {
-  name: string;
-  x: number;
-  y: number;
-  z: number;
-}
+import type { TeleportZoneItem } from "../TeleportEditorScreen";
 
 interface TeleportZoneListProps {
-  onBack: () => void;
   teleportZoneList: TeleportZoneItem[];
   selectedTeleportZones: TeleportZoneItem[];
   onSelectTeleportZone: (zone: TeleportZoneItem, shiftKey: boolean) => void;
+  onHoverTeleportZone: (zone: TeleportZoneItem | null) => void;
 }
 
 export function TeleportZoneList({
-  onBack,
   teleportZoneList,
   selectedTeleportZones,
   onSelectTeleportZone,
+  onHoverTeleportZone,
 }: TeleportZoneListProps) {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredZoneList = useMemo(
@@ -46,7 +44,7 @@ export function TeleportZoneList({
           <Button
             variant="ghost"
             size="sm"
-            onClick={onBack}
+            onClick={() => navigate("/")}
             className="flex items-center"
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
@@ -88,6 +86,8 @@ export function TeleportZoneList({
                           : "hover:bg-muted"
                       }`}
                       onClick={(e) => onSelectTeleportZone(zone, e.shiftKey)}
+                      onMouseEnter={() => onHoverTeleportZone(zone)}
+                      onMouseLeave={() => onHoverTeleportZone(null)}
                     >
                       <span>{zone.name}</span>
                       <span className="text-sm text-muted-foreground">

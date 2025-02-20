@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
 export interface PlaneConfigFile {
@@ -14,7 +14,7 @@ async function fetchExistingFiles(): Promise<PlaneConfigFile[]> {
 }
 
 export function useGetExistingFiles() {
-  return useQuery<PlaneConfigFile[]>({
+  return useSuspenseQuery<PlaneConfigFile[]>({
     queryKey: ["existing-files"],
     queryFn: fetchExistingFiles,
   });

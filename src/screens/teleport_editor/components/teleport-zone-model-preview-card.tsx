@@ -1,186 +1,218 @@
-import React, { useState, useRef } from "react";
+// TeleportZoneModelPreview.tsx
+import { useState, useRef, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, useGLTF } from "@react-three/drei";
+import { OrbitControls, useGLTF, Sphere } from "@react-three/drei";
 import * as THREE from "three";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CuboidIcon } from "lucide-react";
-import useCreateNewTeleportZone from "@/hooks/mutations/useCreateNewTeleportZone";
+import { ErrorBoundary } from "react-error-boundary";
+import {
+  useCreateNewTeleportZone,
+  TeleportZoneFormData,
+} from "@/hooks/mutations/useCreateNewTeleportZone";
+import type { TeleportZoneItem } from "../TeleportEditorScreen";
+
+interface ModelViewerProps {
+  blobUrl: string;
+  onClick: () => void;
+  onPointerMove: (point: THREE.Vector3 | null) => void;
+  teleportZones: TeleportZoneItem[];
+  selectedTeleportZones: TeleportZoneItem[];
+  isPlacementMode: boolean;
+  hoverPoint: THREE.Vector3 | null;
+}
 
 interface TeleportZoneModelPreviewProps {
   blobUrl: string;
+  teleportZones: TeleportZoneItem[];
+  selectedTeleportZones: TeleportZoneItem[];
 }
 
 export function TeleportZoneModelPreview({
   blobUrl,
+  teleportZones,
+  selectedTeleportZones,
 }: TeleportZoneModelPreviewProps) {
-  const [isCreating, setIsCreating] = useState(false);
   const [newZoneName, setNewZoneName] = useState("");
-  const [instruction, setInstruction] = useState(
-    "Enter a zone name and click create teleport zone"
-  );
-  const { mutate: createTeleportZone } = useCreateNewTeleportZone();
-  const modelRef = useRef<THREE.Group>(null);
+  const [isPlacementMode, setIsPlacementMode] = useState(false);
+  const [hoverPoint, setHoverPoint] = useState<THREE.Vector3 | null>(null);
+  const { mutate: createNewTeleportZone } = useCreateNewTeleportZone();
 
-  // our click handler: transforms world -> local, rounds, and submits.
-  const handleClick = (point: THREE.Vector3) => {
-    if (!isCreating) return;
-    if (!modelRef.current) {
-      console.error("Model reference not available");
-      return;
-    }
-    const localPoint = modelRef.current.worldToLocal(point.clone());
-    const x = Number.parseFloat(localPoint.x.toFixed(2));
-    const y = Number.parseFloat(localPoint.y.toFixed(2));
-    const z = Number.parseFloat(localPoint.z.toFixed(2));
-    const zoneData = { teleportZoneName: newZoneName, x, y, z };
-    createTeleportZone(zoneData, {
+  const handleCanvasClick = () => {
+    if (!isPlacementMode || !hoverPoint) return;
+
+    const newZone: TeleportZoneItem = {
+      name: newZoneName,
+      x: hoverPoint.x,
+      y: hoverPoint.y,
+      z: hoverPoint.z,
+    };
+
+    const formData: TeleportZoneFormData = {
+      teleportZoneName: newZone.name,
+      x: newZone.x,
+      y: newZone.y,
+      z: newZone.z,
+    };
+
+    createNewTeleportZone(formData, {
       onSuccess: () => {
-        setInstruction("Teleport zone created successfully");
-        setIsCreating(false);
         setNewZoneName("");
-      },
-      onError: () => {
-        setInstruction("Failed to create teleport zone");
+        setIsPlacementMode(false);
+        setHoverPoint(null);
       },
     });
+  };
+
+  const handleStartPlacement = () => {
+    setIsPlacementMode(true);
+  };
+
+  const handleCancelPlacement = () => {
+    setIsPlacementMode(false);
+    setHoverPoint(null);
+  };
+
+  const handlePointerMove = (point: THREE.Vector3 | null) => {
+    setHoverPoint(point);
   };
 
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
-        <CardTitle className="text-2xl font-bold flex items-center">
-          <CuboidIcon className="w-6 h-6 mr-2" />
-          Teleport Zone Model
+        <CardTitle className="flex items-center">
+          <CuboidIcon className="mr-2 h-4 w-4" />
+          Teleport Zone Model Preview
+          {isPlacementMode && (
+            <span className="ml-4 text-sm font-normal text-muted-foreground">
+              Click on the model to place the teleport zone
+            </span>
+          )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 min-h-0 flex flex-col">
-        <div className="mb-4">
-          {isCreating ? (
-            <div>
-              <p className="mb-1">
-                Select location on model for zone:{" "}
-                <strong>{newZoneName}</strong>
-              </p>
-              <p className="text-sm text-muted-foreground">{instruction}</p>
-            </div>
-          ) : (
-            <div className="flex gap-2">
-              <Input
-                type="text"
-                placeholder="Zone name"
-                value={newZoneName}
-                onChange={(e) => setNewZoneName(e.target.value)}
-                className="flex-grow"
-              />
-              <Button
-                onClick={() => {
-                  if (newZoneName.trim() === "") {
-                    setInstruction("Please enter a valid zone name");
-                    return;
-                  }
-                  setIsCreating(true);
-                  setInstruction("Click on the model to select location");
-                }}
-              >
-                Create Teleport Zone
-              </Button>
+      <CardContent className="p-4 flex-grow relative">
+        <ErrorBoundary
+          fallbackRender={({ error }) => (
+            <div className="text-red-500">
+              Error loading model: {error.message}
             </div>
           )}
-        </div>
-        <div className="flex-grow relative">
-          <Canvas camera={{ position: [0, 5, 10], fov: 60 }} className="h-full">
-            <ambientLight intensity={0.5} />
-            <pointLight position={[10, 10, 10]} />
-            <OrbitControls />
-            <SelectableModel
-              blobUrl={blobUrl}
-              ref={modelRef}
-              onClick={handleClick}
-            />
-            <ClickPlane onClick={handleClick} />
-          </Canvas>
+        >
+          <Suspense
+            fallback={<div className="text-center">Loading model...</div>}
+          >
+            <Canvas camera={{ position: [5, 5, 5] }}>
+              <ModelViewer
+                blobUrl={blobUrl}
+                onClick={handleCanvasClick}
+                onPointerMove={handlePointerMove}
+                teleportZones={teleportZones}
+                selectedTeleportZones={selectedTeleportZones}
+                isPlacementMode={isPlacementMode}
+                hoverPoint={hoverPoint}
+              />
+            </Canvas>
+          </Suspense>
+        </ErrorBoundary>
+      </CardContent>
+      <CardContent className="p-4 border-t">
+        <div className="flex items-center space-x-2">
+          <Input
+            placeholder="New zone name"
+            value={newZoneName}
+            onChange={(e) => setNewZoneName(e.target.value)}
+            className="flex-grow"
+            disabled={isPlacementMode}
+          />
+          {!isPlacementMode ? (
+            <Button onClick={handleStartPlacement} disabled={!newZoneName}>
+              Create New Zone
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleCancelPlacement}>
+              Cancel
+            </Button>
+          )}
         </div>
       </CardContent>
     </Card>
   );
 }
 
-// helper hook to track pointer down/up
-function useClickDetector(
-  onClick: (point: THREE.Vector3) => void,
-  threshold = 5
-) {
-  const pointerDownRef = useRef<{ x: number; y: number } | null>(null);
+function ModelViewer({
+  blobUrl,
+  onClick,
+  onPointerMove,
+  teleportZones,
+  selectedTeleportZones,
+  isPlacementMode,
+  hoverPoint,
+}: ModelViewerProps) {
+  const modelRef = useRef<THREE.Group>(null);
+  const { scene } = useGLTF(blobUrl);
 
-  const handlePointerDown = (e: any) => {
-    pointerDownRef.current = { x: e.clientX, y: e.clientY };
-  };
+  const handlePointerMove = (event: any) => {
+    if (!isPlacementMode) return;
 
-  const handlePointerUp = (e: any, point: THREE.Vector3) => {
-    if (pointerDownRef.current) {
-      const dx = e.clientX - pointerDownRef.current.x;
-      const dy = e.clientY - pointerDownRef.current.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      if (dist < threshold) {
-        onClick(point);
-      }
+    if (event.intersections && event.intersections.length > 0) {
+      onPointerMove(event.intersections[0].point);
+    } else {
+      onPointerMove(null);
     }
-    pointerDownRef.current = null;
   };
 
-  return { handlePointerDown, handlePointerUp };
-}
+  const handleClick = () => {
+    if (!isPlacementMode || !hoverPoint) return;
+    onClick();
+  };
 
-type SelectableModelProps = {
-  blobUrl: string;
-  onClick: (point: THREE.Vector3) => void;
-};
-
-const SelectableModel = React.forwardRef<THREE.Group, SelectableModelProps>(
-  ({ blobUrl, onClick }, ref) => {
-    const { scene } = useGLTF(blobUrl);
-    const { handlePointerDown, handlePointerUp } = useClickDetector(onClick);
-    return (
+  return (
+    <>
+      <ambientLight intensity={1.2} />
+      <pointLight position={[10, 10, 10]} intensity={1} />
+      <hemisphereLight
+        color={0xffffff}
+        groundColor={0x444444}
+        intensity={0.6}
+      />
       <primitive
         object={scene}
-        ref={ref}
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          handlePointerDown(e);
-        }}
-        onPointerUp={(e) => {
-          e.stopPropagation();
-          handlePointerUp(e, e.point);
-        }}
+        ref={modelRef}
+        onPointerMove={handlePointerMove}
+        onClick={handleClick}
       />
-    );
-  }
-);
-SelectableModel.displayName = "SelectableModel";
-
-type ClickPlaneProps = {
-  onClick: (point: THREE.Vector3) => void;
-};
-
-function ClickPlane({ onClick }: ClickPlaneProps) {
-  const { handlePointerDown, handlePointerUp } = useClickDetector(onClick);
-  return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, 0, 0]}
-      onPointerDown={(e) => {
-        e.stopPropagation();
-        handlePointerDown(e);
-      }}
-      onPointerUp={(e) => {
-        e.stopPropagation();
-        handlePointerUp(e, e.point);
-      }}
-    >
-      <planeGeometry args={[100, 100]} />
-      <meshBasicMaterial color="white" opacity={0} transparent />
-    </mesh>
+      {teleportZones.map((zone) => (
+        <Sphere
+          key={zone.name}
+          position={[zone.x, zone.z, -zone.y]}
+          args={[0.1, 32, 32]}
+        >
+          <meshStandardMaterial
+            color={
+              selectedTeleportZones.some((s) => s.name === zone.name)
+                ? "#ff0000"
+                : "#0000ff"
+            }
+            emissive={
+              selectedTeleportZones.some((s) => s.name === zone.name)
+                ? "#ff0000"
+                : "#0000ff"
+            }
+            emissiveIntensity={0.5}
+          />
+        </Sphere>
+      ))}
+      {isPlacementMode && hoverPoint && (
+        <Sphere
+          position={[hoverPoint.x, hoverPoint.y, hoverPoint.z]}
+          args={[0.1, 32, 32]}
+        >
+          <meshStandardMaterial color="#00ff00" opacity={0.5} transparent />
+        </Sphere>
+      )}
+      <OrbitControls enabled={!isPlacementMode} />
+    </>
   );
 }
