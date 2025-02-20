@@ -44,7 +44,7 @@ fn main() {
             create_new_config_file,
             get_current_config_file_contents,
             open_file,
-            parse_glb
+            load_plane_model_data
         ])
         .setup(|app| {
             setup_plane_config_folder(app);

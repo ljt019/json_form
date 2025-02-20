@@ -2,7 +2,7 @@ mod add_new_switch;
 mod add_new_teleport_zone;
 mod config_file_management;
 mod load_existing_plane_config_files;
-mod parse_glb;
+mod load_plane_model_data;
 
 pub use add_new_switch::add_new_switch;
 pub use add_new_teleport_zone::add_new_teleport_zone;
@@ -11,4 +11,4 @@ pub use config_file_management::{
     open_plane_config_folder, set_current_config_file,
 };
 pub use load_existing_plane_config_files::load_existing_plane_config_files;
-pub use parse_glb::parse_glb;
+pub use load_plane_model_data::load_plane_model_data;

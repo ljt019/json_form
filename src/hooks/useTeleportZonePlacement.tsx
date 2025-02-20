@@ -4,7 +4,6 @@ import {
   useCreateNewTeleportZone,
   TeleportZoneFormData,
 } from "@/hooks/mutations/useCreateNewTeleportZone";
-import type { TeleportZoneItem } from "@/screens/teleport_editor/TeleportEditorScreen";
 
 export function useTeleportZonePlacement() {
   const [newZoneName, setNewZoneName] = useState("");

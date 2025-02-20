@@ -2,11 +2,11 @@ import { useRef, useEffect } from "react";
 import { ThreeEvent } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-import { TeleportZoneItem } from "../TeleportEditorScreen";
-import { TeleportZoneSphere } from "./teleport-zone-sphere";
+import { TeleportZoneItem } from "@/types";
+import { TeleportZoneMarker } from "./teleport-zone-marker";
 import { Group } from "three";
 
-interface ModelViewerProps {
+interface PlaneSceneRendererProps {
   scene: Group;
   isPlacementMode: boolean;
   hoverPoint: THREE.Vector3 | null;
@@ -16,7 +16,7 @@ interface ModelViewerProps {
   selectedTeleportZones: TeleportZoneItem[];
 }
 
-export function TeleportZoneModelViewer({
+export function PlaneSceneRenderer({
   scene,
   isPlacementMode,
   hoverPoint,
@@ -24,7 +24,7 @@ export function TeleportZoneModelViewer({
   onClick,
   teleportZones,
   selectedTeleportZones,
-}: ModelViewerProps) {
+}: PlaneSceneRendererProps) {
   const modelRef = useRef<THREE.Group>(null);
 
   const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
@@ -76,7 +76,7 @@ export function TeleportZoneModelViewer({
       </group>
 
       {teleportZones.map((zone) => (
-        <TeleportZoneSphere
+        <TeleportZoneMarker
           key={zone.name}
           position={[zone.x, zone.z, -zone.y]}
           isSelected={selectedTeleportZones.some((s) => s.name === zone.name)}
@@ -84,7 +84,7 @@ export function TeleportZoneModelViewer({
       ))}
 
       {isPlacementMode && hoverPoint && (
-        <TeleportZoneSphere
+        <TeleportZoneMarker
           position={[hoverPoint.x, hoverPoint.y, hoverPoint.z]}
           isPlaceholder
         />

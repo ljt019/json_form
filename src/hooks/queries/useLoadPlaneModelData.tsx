@@ -9,26 +9,26 @@ export interface ParsedSwitchItem {
   switchType: string;
 }
 
-export interface ParsedGLBData {
+export interface PlaneModelData {
   switches: ParsedSwitchItem[];
   modelBase64: string;
 }
 
-interface BackendGLBData extends ParsedGLBData {}
-
-async function fetchParsedGLBData(modelPath: string): Promise<BackendGLBData> {
-  const result = await invoke<BackendGLBData>("parse_glb", { modelPath });
+async function loadPlaneModelData(modelPath: string): Promise<PlaneModelData> {
+  const result = await invoke<PlaneModelData>("load_plane_model_data", {
+    modelPath,
+  });
   return result;
 }
 
-export function useParsedGLBData(modelPath: string) {
+export function useLoadPlaneModelData(modelPath: string) {
   return useSuspenseQuery({
     queryKey: ["parsed-glb", modelPath],
     queryFn: async () => {
       if (!modelPath) {
         return { switches: [], blobUrl: "" };
       }
-      const data = await fetchParsedGLBData(modelPath);
+      const data = await loadPlaneModelData(modelPath);
       const byteCharacters = atob(data.modelBase64.trim());
       const byteNumbers = new Array(byteCharacters.length);
       for (let i = 0; i < byteCharacters.length; i++) {

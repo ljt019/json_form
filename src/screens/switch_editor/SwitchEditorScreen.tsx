@@ -7,7 +7,7 @@ import { ErrorBoundary } from "react-error-boundary";
 
 import { PlaneForm } from "@/screens/switch_editor/components/form/form";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
-import { useParsedGLBData } from "@/hooks/queries/useParsedGLBData";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 import { SwitchList } from "@/screens/switch_editor/components/switch-list-card";
 import { SwitchModelPreview } from "@/screens/switch_editor/components/switch-model-preview-card";
 
@@ -50,7 +50,7 @@ function SwitchEditorContent() {
 
   // Data fetching with Suspense
   const { data: planeData } = useGetSelectedConfigData();
-  const { data: parsedData } = useParsedGLBData(planeData.modelPath);
+  const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
 
   // Load GLTF
   const { scene } = useGLTF(

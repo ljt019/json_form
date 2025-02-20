@@ -7,24 +7,21 @@ import { Input } from "@/components/ui/input";
 import { CuboidIcon } from "lucide-react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useTeleportZonePlacement } from "@/hooks/useTeleportZonePlacement";
-import { TeleportZoneItem } from "../TeleportEditorScreen";
-import { TeleportZoneModelViewer } from "./teleport-zone-model-viewer";
-import { Group } from "three";
+import { TeleportZoneItem } from "@/types";
+import { PlaneSceneRenderer } from "./plane-scene-renderer";
 
-interface TeleportZonePreviewProps {
+interface PlaneSceneContainerProps {
   blobUrl: string;
   teleportZones: TeleportZoneItem[];
   selectedTeleportZones: TeleportZoneItem[];
 }
 
-export function TeleportZonePreview({
+export function PlaneSceneContainer({
   blobUrl,
   teleportZones,
   selectedTeleportZones,
-}: TeleportZonePreviewProps) {
+}: PlaneSceneContainerProps) {
   const { scene } = useGLTF(blobUrl);
-
-  const modelScene = scene as Group;
 
   const {
     newZoneName,
@@ -63,7 +60,7 @@ export function TeleportZonePreview({
             fallback={<div className="text-center">Loading model...</div>}
           >
             <Canvas camera={{ position: [5, 5, 5] }}>
-              <TeleportZoneModelViewer
+              <PlaneSceneRenderer
                 scene={scene}
                 isPlacementMode={isPlacementMode}
                 hoverPoint={hoverPoint}

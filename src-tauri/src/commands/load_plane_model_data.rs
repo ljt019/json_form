@@ -46,7 +46,7 @@ fn traverse_node(
 }
 
 #[tauri::command]
-pub async fn parse_glb(app_handle: tauri::AppHandle) -> Result<ParsedGLBData, String> {
+pub async fn load_plane_model_data(app_handle: tauri::AppHandle) -> Result<ParsedGLBData, String> {
     let state = app_handle.state::<Mutex<AppData>>();
     let current_file = {
         let state = state.lock().unwrap();

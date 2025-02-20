@@ -1,16 +1,16 @@
 import { Sphere } from "@react-three/drei";
 
-interface TeleportZoneSphereProps {
+interface TeleportZoneMarkerProps {
   position: [number, number, number];
   isSelected?: boolean;
   isPlaceholder?: boolean;
 }
 
-export function TeleportZoneSphere({
+export function TeleportZoneMarker({
   position,
   isSelected,
   isPlaceholder,
-}: TeleportZoneSphereProps) {
+}: TeleportZoneMarkerProps) {
   return (
     <Sphere position={position} args={[0.1, 32, 32]}>
       <meshStandardMaterial

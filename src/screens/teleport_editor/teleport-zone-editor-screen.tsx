@@ -1,18 +1,11 @@
 import { useMemo, Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
-import { useParsedGLBData } from "@/hooks/queries/useParsedGLBData";
-import { TeleportZoneList } from "./components/teleport-zone-list-card";
-import { TeleportZonePreview } from "./components/teleport-zone-model-preview-card";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
+import { TeleportZoneList } from "./components/teleport-zone-list";
+import { PlaneSceneContainer } from "./components/plane-scene-container";
 import { useTeleportZoneSelection } from "@/hooks/useTeleportZoneSelection";
 import { Card, CardContent } from "@/components/ui/card";
-
-export interface TeleportZoneItem {
-  name: string;
-  x: number;
-  y: number;
-  z: number;
-}
 
 interface LoadingCardProps {
   message: string;
@@ -56,10 +49,11 @@ export function TeleportEditorScreen() {
 
 function TeleportEditorContent() {
   const { data: planeData } = useGetSelectedConfigData();
-  const { data: parsedData } = useParsedGLBData(planeData?.modelPath ?? "");
+  const { data: parsedData } = useLoadPlaneModelData(
+    planeData?.modelPath ?? ""
+  );
   const {
     selectedTeleportZones,
-    hoveredTeleportZone,
     handleSelectTeleportZone,
     handleHoverTeleportZone,
   } = useTeleportZoneSelection();
@@ -98,7 +92,7 @@ function TeleportEditorContent() {
           </div>
         </div>
         <div className="w-2/3 h-[calc(100vh-2rem)]">
-          <TeleportZonePreview
+          <PlaneSceneContainer
             blobUrl={parsedData.blobUrl}
             teleportZones={teleportZoneList}
             selectedTeleportZones={selectedTeleportZones}

@@ -4,7 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { CheckCircle, XCircle, Sliders, Sparkles } from "lucide-react";
-import { ParsedSwitchItem } from "@/hooks/queries/useParsedGLBData";
+import { ParsedSwitchItem } from "@/hooks/queries/useLoadPlaneModelData";
 import { FullConfigFile } from "@/hooks/queries/useGetSelectedConfigData";
 
 interface SwitchInfoProps {

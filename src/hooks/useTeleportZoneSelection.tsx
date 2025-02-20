@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { TeleportZoneItem } from "@/screens/teleport_editor/TeleportEditorScreen";
+import type { TeleportZoneItem } from "@/types";
 
 export function useTeleportZoneSelection() {
   const [selectedTeleportZones, setSelectedTeleportZones] = useState<

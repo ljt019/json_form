@@ -5,7 +5,7 @@ import { FileManagement } from "./components/file-management";
 import { ModelPreview } from "./components/model-preview-card";
 import { InfoPane } from "./components/info-pane-card";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
-import { useParsedGLBData } from "@/hooks/queries/useParsedGLBData";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 
 export function MainScreen() {
   return (
@@ -36,7 +36,7 @@ export function MainScreen() {
 function MainScreenContent() {
   const { data: planeData } = useGetSelectedConfigData();
   const modelPath = planeData?.modelPath ?? "";
-  const { data: parsedData } = useParsedGLBData(modelPath);
+  const { data: parsedData } = useLoadPlaneModelData(modelPath);
 
   return (
     <div className="w-full min-h-screen p-4 flex flex-col">

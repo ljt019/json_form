@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
 import { FileText, ArrowLeft, Search } from "lucide-react";
-import type { TeleportZoneItem } from "../TeleportEditorScreen";
+import type { TeleportZoneItem } from "@/types";
 
 interface TeleportZoneListProps {
   teleportZoneList: TeleportZoneItem[];
