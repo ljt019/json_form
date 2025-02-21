@@ -9,6 +9,8 @@ import { ErrorBoundary } from "react-error-boundary";
 import { useTeleportZonePlacement } from "@/hooks/useTeleportZonePlacement";
 import { TeleportZoneItem } from "@/types";
 import { PlaneSceneRenderer } from "./plane-scene-renderer";
+import { ErrorCard } from "@/components/error";
+import { LoadingCard } from "@/components/loading";
 
 interface PlaneSceneContainerProps {
   blobUrl: string;
@@ -49,16 +51,8 @@ export function PlaneSceneContainer({
       </CardHeader>
 
       <CardContent className="p-4 flex-grow relative">
-        <ErrorBoundary
-          fallbackRender={({ error }) => (
-            <div className="text-red-500">
-              Error loading model: {error.message}
-            </div>
-          )}
-        >
-          <Suspense
-            fallback={<div className="text-center">Loading model...</div>}
-          >
+        <ErrorBoundary fallback={<ErrorCard />}>
+          <Suspense fallback={<LoadingCard />}>
             <Canvas camera={{ position: [5, 5, 5] }}>
               <PlaneSceneRenderer
                 scene={scene}

@@ -5,42 +5,13 @@ import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 import { TeleportZoneList } from "./components/teleport-zone-list";
 import { PlaneSceneContainer } from "./components/plane-scene-container";
 import { useTeleportZoneSelection } from "@/hooks/useTeleportZoneSelection";
-import { Card, CardContent } from "@/components/ui/card";
-
-interface LoadingCardProps {
-  message: string;
-  variant?: "default" | "error" | "muted";
-}
-
-function LoadingCard({ message, variant = "default" }: LoadingCardProps) {
-  const textColorClass = {
-    default: "",
-    error: "text-destructive",
-    muted: "text-muted-foreground",
-  }[variant];
-
-  return (
-    <Card className="h-full">
-      <CardContent
-        className={`flex items-center justify-center h-full ${textColorClass}`}
-      >
-        {message}
-      </CardContent>
-    </Card>
-  );
-}
+import { ErrorCard } from "@/components/error";
+import { LoadingCard } from "@/components/loading";
 
 export function TeleportEditorScreen() {
   return (
-    <ErrorBoundary
-      fallback={
-        <LoadingCard
-          message="Something went wrong loading the editor."
-          variant="error"
-        />
-      }
-    >
-      <Suspense fallback={<LoadingCard message="Loading editor..." />}>
+    <ErrorBoundary fallback={<ErrorCard />}>
+      <Suspense fallback={<LoadingCard />}>
         <TeleportEditorContent />
       </Suspense>
     </ErrorBoundary>
@@ -70,12 +41,7 @@ function TeleportEditorContent() {
   }, [planeData]);
 
   if (!planeData?.modelPath) {
-    return (
-      <LoadingCard
-        message="Please select or create a plane configuration."
-        variant="muted"
-      />
-    );
+    return <LoadingCard />;
   }
 
   return (

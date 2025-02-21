@@ -4,7 +4,11 @@ import { OrbitControls, Html, useGLTF } from "@react-three/drei";
 import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { CuboidIcon as Cube } from "lucide-react";
-import { RotatingPrimitive } from "@/components/three-components";
+import { RotatingPrimitive } from "@/components/rotating-primitive";
+import { LoadingCard } from "@/components/loading";
+import { ErrorCard } from "@/components/error";
+import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 
 interface ModelViewerProps {
   blobUrl: string;
@@ -48,32 +52,27 @@ function ModelViewer({ blobUrl }: ModelViewerProps) {
   );
 }
 
-function ModelErrorFallback() {
-  return (
-    <Card className="h-full">
-      <CardContent className="flex items-center justify-center h-full text-destructive">
-        Error loading 3D model
-      </CardContent>
-    </Card>
-  );
-}
+export function ModelPreview() {
+  const { data: planeData } = useGetSelectedConfigData();
+  const modelPath = planeData?.modelPath ?? "";
+  const { data: parsedData } = useLoadPlaneModelData(modelPath);
 
-// Custom loading fallback that doesn't use drei's Html component
-function ModelLoadingFallback() {
-  return (
-    <Card className="h-full">
-      <CardContent className="flex items-center justify-center h-full">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </CardContent>
-    </Card>
-  );
-}
+  if (!modelPath) {
+    return (
+      <Card className="h-full flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold flex items-center">
+            <Cube className="w-6 h-6 mr-2" />
+            Plane Model
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 min-h-0 flex items-center justify-center text-muted-foreground">
+          Please select or create a plane configuration.
+        </CardContent>
+      </Card>
+    );
+  }
 
-interface ModelPreviewProps {
-  blobUrl: string;
-}
-
-export function ModelPreview({ blobUrl }: ModelPreviewProps) {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -84,30 +83,26 @@ export function ModelPreview({ blobUrl }: ModelPreviewProps) {
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
         <div className="h-full w-full">
-          <ErrorBoundary fallback={<ModelErrorFallback />}>
-            <Suspense fallback={<ModelLoadingFallback />}>
-              <Canvas camera={{ position: [0, 5, 12], fov: 50 }}>
-                <ErrorBoundary
+          <ErrorBoundary fallback={<LoadingCard />}>
+            <Canvas camera={{ position: [0, 5, 12], fov: 50 }}>
+              <ErrorBoundary
+                fallback={
+                  <Html center>
+                    <ErrorCard />
+                  </Html>
+                }
+              >
+                <Suspense
                   fallback={
                     <Html center>
-                      <div className="text-destructive">
-                        Error loading model
-                      </div>
+                      <LoadingCard />
                     </Html>
                   }
                 >
-                  <Suspense
-                    fallback={
-                      <Html center>
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-                      </Html>
-                    }
-                  >
-                    <ModelViewer blobUrl={blobUrl} />
-                  </Suspense>
-                </ErrorBoundary>
-              </Canvas>
-            </Suspense>
+                  <ModelViewer blobUrl={parsedData.blobUrl} />
+                </Suspense>
+              </ErrorBoundary>
+            </Canvas>
           </ErrorBoundary>
         </div>
       </CardContent>

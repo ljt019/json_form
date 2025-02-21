@@ -1,5 +1,5 @@
 import { useRef, useEffect, useMemo } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 export interface RotatingPrimitiveProps {
@@ -37,22 +37,3 @@ export function RotatingPrimitive({
 
   return <primitive ref={ref} object={clonedObject} />;
 }
-
-//export interface CameraSetupProps {
-//  position: [number, number, number];
-//  target: [number, number, number];
-//}
-
-/**
- * CameraSetup positions the camera and orients it to look at a given target.
- */
-//export function CameraSetup({ position, target }: CameraSetupProps) {
-//  const { camera } = useThree();
-//
-///=  useEffect(() => {
-//    camera.position.set(position[0], position[1], position[2]);
-//    camera.lookAt(target[0], target[1], target[2]);
-//  }, [camera, position, target]);
-//
-//  return null;
-//}

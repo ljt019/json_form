@@ -2,7 +2,6 @@ import { useState, useMemo, startTransition, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
-import { Card, CardContent } from "@/components/ui/card";
 import { ErrorBoundary } from "react-error-boundary";
 
 import { PlaneForm } from "@/screens/switch_editor/components/form/form";
@@ -10,6 +9,8 @@ import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigDa
 import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 import { SwitchList } from "@/screens/switch_editor/components/switch-list-card";
 import { SwitchModelPreview } from "@/screens/switch_editor/components/switch-model-preview-card";
+import { ErrorCard } from "@/components/error";
+import { LoadingCard } from "@/components/loading";
 
 export interface SwitchItem {
   name: string;
@@ -20,24 +21,8 @@ export interface SwitchItem {
 
 export function SwitchEditorScreen() {
   return (
-    <ErrorBoundary
-      fallback={
-        <Card className="h-full">
-          <CardContent className="flex items-center justify-center h-full text-destructive">
-            Something went wrong loading the editor.
-          </CardContent>
-        </Card>
-      }
-    >
-      <Suspense
-        fallback={
-          <Card className="h-full">
-            <CardContent className="flex items-center justify-center h-full">
-              Loading editor...
-            </CardContent>
-          </Card>
-        }
-      >
+    <ErrorBoundary fallback={<ErrorCard />}>
+      <Suspense fallback={<LoadingCard />}>
         <SwitchEditorContent />
       </Suspense>
     </ErrorBoundary>

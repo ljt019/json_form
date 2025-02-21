@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { FileText } from "lucide-react";
-import { NewFileButton } from "@/components/new-file-button";
-import { ExistingFilesList } from "@/components/existing-files-list";
-import { OpenOutputDirButton } from "@/components/open-output-dir-button";
+import { NewFileButton } from "@/screens/main_screen/components/new-file-button";
+import { ExistingFilesList } from "@/screens/main_screen/components/existing-files-list";
+import { OpenOutputDirButton } from "@/screens/main_screen/components/open-output-dir-button";
 
 export function FileManagement() {
   const [isCreatingNewFile, setIsCreatingNewFile] = useState(false);

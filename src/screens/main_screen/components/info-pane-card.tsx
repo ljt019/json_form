@@ -6,6 +6,9 @@ import { Separator } from "@/components/ui/separator";
 import { CheckCircle, XCircle, Sliders, Sparkles } from "lucide-react";
 import { ParsedSwitchItem } from "@/hooks/queries/useLoadPlaneModelData";
 import { FullConfigFile } from "@/hooks/queries/useGetSelectedConfigData";
+import { LoadingCard } from "@/components/loading";
+import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 
 interface SwitchInfoProps {
   planeData: FullConfigFile;
@@ -57,13 +60,21 @@ function SwitchInfo({ planeData, switches }: SwitchInfoProps) {
   );
 }
 
-interface InfoPaneProps {
-  planeData: FullConfigFile;
-  switches: ParsedSwitchItem[];
-}
-
-export function InfoPane({ planeData, switches }: InfoPaneProps) {
+export function InfoPane() {
   const navigate = useNavigate();
+  const { data: planeData } = useGetSelectedConfigData();
+  const modelPath = planeData?.modelPath ?? "";
+  const { data: parsedData } = useLoadPlaneModelData(modelPath);
+
+  if (!modelPath) {
+    return (
+      <Card className="h-full">
+        <CardContent className="flex items-center justify-center h-full text-muted-foreground">
+          Please select or create a plane configuration.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="h-full">
@@ -73,8 +84,8 @@ export function InfoPane({ planeData, switches }: InfoPaneProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col h-[calc(100%-5rem)] justify-between">
-        <Suspense fallback={<div>Loading switch info...</div>}>
-          <SwitchInfo planeData={planeData} switches={switches} />
+        <Suspense fallback={<LoadingCard />}>
+          <SwitchInfo planeData={planeData} switches={parsedData.switches} />
         </Suspense>
         <div className="flex space-x-2">
           <Button

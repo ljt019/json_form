@@ -1,13 +1,14 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Html, useGLTF } from "@react-three/drei";
+import { OrbitControls, Html } from "@react-three/drei";
 import { ErrorBoundary } from "react-error-boundary";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { CuboidIcon as Cube } from "lucide-react";
-import * as THREE from "three";
 
 import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen";
-import { RotatingPrimitive } from "@/components/three-components";
+import { RotatingPrimitive } from "@/components/rotating-primitive";
+import { ErrorCard } from "@/components/error";
+import { LoadingCard } from "@/components/loading";
 
 // Separate component for 3D content to isolate Suspense boundary
 function ModelViewer({
@@ -66,29 +67,6 @@ function Scene({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
   );
 }
 
-// Custom error fallback for 3D content
-function ModelErrorFallback({ error }: { error: Error }) {
-  return (
-    <Html center>
-      <div className="flex flex-col items-center justify-center gap-2 text-destructive">
-        <p>Failed to load 3D model</p>
-        <p className="text-sm text-muted-foreground">{error.message}</p>
-      </div>
-    </Html>
-  );
-}
-
-// Custom loading state for 3D content
-function ModelLoadingFallback() {
-  return (
-    <Html center>
-      <div className="flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-      </div>
-    </Html>
-  );
-}
-
 interface SwitchModelPreviewProps {
   selectedSwitch: SwitchItem | null;
 }
@@ -108,12 +86,18 @@ export function SwitchModelPreview({
         <div className="h-full w-full bg-muted rounded-md">
           <ErrorBoundary
             fallback={
-              <ModelErrorFallback
-                error={new Error("Failed to initialize 3D context")}
-              />
+              <Html>
+                <ErrorCard />
+              </Html>
             }
           >
-            <Suspense fallback={<ModelLoadingFallback />}>
+            <Suspense
+              fallback={
+                <Html>
+                  <LoadingCard />
+                </Html>
+              }
+            >
               <ModelViewer selectedSwitch={selectedSwitch} />
             </Suspense>
           </ErrorBoundary>
