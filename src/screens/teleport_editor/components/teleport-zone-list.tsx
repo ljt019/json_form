@@ -6,14 +6,17 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { FileText, ArrowLeft, Search } from "lucide-react";
+import { FileText, ArrowLeft, Search, Trash2 } from "lucide-react";
 import type { TeleportZoneItem } from "@/types";
+import { EditableCoordinate } from "./editable-coordinate";
 
 interface TeleportZoneListProps {
   teleportZoneList: TeleportZoneItem[];
   selectedTeleportZones: TeleportZoneItem[];
   onSelectTeleportZone: (zone: TeleportZoneItem, shiftKey: boolean) => void;
   onHoverTeleportZone: (zone: TeleportZoneItem | null) => void;
+  onDeleteTeleportZone: (zone: TeleportZoneItem) => void;
+  onUpdateTeleportZone: (zone: TeleportZoneItem) => void;
 }
 
 export function TeleportZoneList({
@@ -21,6 +24,8 @@ export function TeleportZoneList({
   selectedTeleportZones,
   onSelectTeleportZone,
   onHoverTeleportZone,
+  onDeleteTeleportZone,
+  onUpdateTeleportZone,
 }: TeleportZoneListProps) {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,20 +85,55 @@ export function TeleportZoneList({
                   return (
                     <li
                       key={index}
-                      className={`py-2 px-3 rounded-md cursor-pointer transition-colors flex items-center justify-between ${
+                      className={`py-2 px-3 rounded-md cursor-pointer transition-colors flex items-center justify-between group ${
                         isSelected
                           ? "bg-primary text-primary-foreground"
                           : "hover:bg-muted"
                       }`}
-                      onClick={(e) => onSelectTeleportZone(zone, e.shiftKey)}
-                      onMouseEnter={() => onHoverTeleportZone(zone)}
-                      onMouseLeave={() => onHoverTeleportZone(null)}
                     >
-                      <span>{zone.name}</span>
-                      <span className="text-sm text-muted-foreground">
-                        ({zone.x.toFixed(2)}, {zone.y.toFixed(2)},{" "}
-                        {zone.z.toFixed(2)})
-                      </span>
+                      <div
+                        className="flex-1 flex items-center justify-between mr-2"
+                        onClick={(e) => onSelectTeleportZone(zone, e.shiftKey)}
+                        onMouseEnter={() => onHoverTeleportZone(zone)}
+                        onMouseLeave={() => onHoverTeleportZone(null)}
+                      >
+                        <span>{zone.name}</span>
+                        <div className="flex items-center space-x-2">
+                          <EditableCoordinate
+                            value={zone.x}
+                            onChange={(value) =>
+                              onUpdateTeleportZone({ ...zone, x: value })
+                            }
+                            label="X"
+                          />
+                          <EditableCoordinate
+                            value={zone.y}
+                            onChange={(value) =>
+                              onUpdateTeleportZone({ ...zone, y: value })
+                            }
+                            label="Y"
+                          />
+                          <EditableCoordinate
+                            value={zone.z}
+                            onChange={(value) =>
+                              onUpdateTeleportZone({ ...zone, z: value })
+                            }
+                            label="Z"
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`w-8 h-8 p-1 opacity-0 group-hover:opacity-100 hover:text-red-800 transition-opacity ${
+                          isSelected
+                            ? "hover:bg-primary-foreground/20"
+                            : "hover:bg-muted-foreground/20"
+                        }`}
+                        onClick={() => onDeleteTeleportZone(zone)}
+                      >
+                        <Trash2 className="w-4 h-4 " />
+                      </Button>
                     </li>
                   );
                 })}

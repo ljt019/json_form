@@ -7,6 +7,9 @@ import { PlaneSceneContainer } from "./components/plane-scene-container";
 import { useTeleportZoneSelection } from "@/hooks/useTeleportZoneSelection";
 import { ErrorCard } from "@/components/error";
 import { LoadingCard } from "@/components/loading";
+import { useRemoveTeleportZone } from "@/hooks/mutations/useRemoveTeleportZone";
+import { useUpdateTeleportZone } from "@/hooks/mutations/useUpdateTeleportZone";
+import type { TeleportZoneItem } from "@/types";
 
 export function TeleportEditorScreen() {
   return (
@@ -23,13 +26,14 @@ function TeleportEditorContent() {
   const { data: parsedData } = useLoadPlaneModelData(
     planeData?.modelPath ?? ""
   );
+  const { mutate: removeTeleportZone } = useRemoveTeleportZone();
+  const { mutate: updateTeleportZone } = useUpdateTeleportZone();
   const {
     selectedTeleportZones,
     handleSelectTeleportZone,
     handleHoverTeleportZone,
   } = useTeleportZoneSelection();
 
-  // Convert teleport zones from planeData
   const teleportZoneList = useMemo(() => {
     const zones = planeData?.teleportZones || {};
     return Object.keys(zones).map((key) => ({
@@ -39,6 +43,14 @@ function TeleportEditorContent() {
       z: zones[key].z,
     }));
   }, [planeData]);
+
+  const handleDeleteTeleportZone = (zone: TeleportZoneItem) => {
+    removeTeleportZone(zone.name);
+  };
+
+  const handleUpdateTeleportZone = (updatedZone: TeleportZoneItem) => {
+    updateTeleportZone(updatedZone);
+  };
 
   if (!planeData?.modelPath) {
     return <LoadingCard />;
@@ -54,6 +66,8 @@ function TeleportEditorContent() {
               selectedTeleportZones={selectedTeleportZones}
               onSelectTeleportZone={handleSelectTeleportZone}
               onHoverTeleportZone={handleHoverTeleportZone}
+              onDeleteTeleportZone={handleDeleteTeleportZone}
+              onUpdateTeleportZone={handleUpdateTeleportZone}
             />
           </div>
         </div>
