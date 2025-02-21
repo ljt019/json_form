@@ -67,15 +67,16 @@ function SwitchEditorContent() {
       .filter((x): x is SwitchItem => x !== null);
   }, [scene, parsedData]);
 
-  const [selectedSwitches, setSelectedSwitches] = useState<SwitchItem[]>([]);
-  const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
+  // Initialize selected switches with the first switch if available
+  const initialSelectedSwitch = switchList.length > 0 ? [switchList[0]] : [];
+  const [selectedSwitches, setSelectedSwitches] = useState<SwitchItem[]>(
+    initialSelectedSwitch
+  );
+  const [anchorIndex, setAnchorIndex] = useState<number>(
+    switchList.length > 0 ? 0 : -1
+  );
 
-  const displayedSwitch = useMemo(() => {
-    if (selectedSwitches.length > 0) {
-      return selectedSwitches[0];
-    }
-    return switchList[0] ?? null;
-  }, [selectedSwitches, switchList]);
+  const displayedSwitch = selectedSwitches[0] ?? switchList[0] ?? null;
 
   const handleSelectSwitch = (
     sw: SwitchItem,
@@ -85,7 +86,7 @@ function SwitchEditorContent() {
     const currentIndex = switchList.findIndex((s) => s.name === sw.name);
     startTransition(() => {
       if (shiftKey) {
-        if (anchorIndex !== null) {
+        if (anchorIndex !== -1) {
           const start = Math.min(anchorIndex, currentIndex);
           const end = Math.max(anchorIndex, currentIndex);
           const range = switchList.slice(start, end + 1);

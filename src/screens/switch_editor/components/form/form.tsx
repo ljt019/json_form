@@ -31,55 +31,51 @@ interface PlaneFormProps {
   selectedSwitches: SwitchItem[];
 }
 
-/*
-the outer component renders nothing if no switch is selected.
-when at least one switch is selected, it renders the internal form.
-*/
 export function PlaneForm({ selectedSwitches }: PlaneFormProps) {
-  if (selectedSwitches.length === 0) {
-    return null;
-  }
-  // use a key based on the names of selected switches joined together
-  const key = selectedSwitches.map((sw) => sw.name).join("-");
-  return <PlaneFormInternal key={key} selectedSwitches={selectedSwitches} />;
-}
-
-/*
-the internal form component initializes with default values based
-on the selected switches and configuration data.
-*/
-function PlaneFormInternal({
-  selectedSwitches,
-}: {
-  selectedSwitches: SwitchItem[];
-}) {
+  const hasSelectedSwitches = selectedSwitches.length > 0;
   const { data: planeData } = useGetSelectedConfigData();
-  // for a group, if the switches have different configurations,
-  // you might choose to leave the field empty or use a placeholder.
-  const primarySwitch = selectedSwitches[0];
-  const existingConfig = planeData?.switches[primarySwitch.name];
 
-  // if more than one switch is selected, set group placeholders for fields that must be unique.
+  // Initialize with empty values when no switch is selected
   const defaultValues: FormData = {
-    switchName:
-      selectedSwitches.length > 1 ? "GROUP SELECTED" : primarySwitch.name,
-    switchType:
+    switchName: "",
+    switchType: "button",
+    movementAxis: "X",
+    switchDescription: "",
+    movementMode: false,
+    momentarySwitch: false,
+    defaultPosition: undefined,
+    upperLimit: 0,
+    lowerLimit: 0,
+    bleedMargins: 0,
+  };
+
+  // Override with actual values when switches are selected
+  if (hasSelectedSwitches) {
+    const primarySwitch = selectedSwitches[0];
+    const existingConfig = planeData?.switches[primarySwitch.name];
+
+    defaultValues.switchName =
+      selectedSwitches.length > 1 ? "GROUP SELECTED" : primarySwitch.name;
+    defaultValues.switchType =
       selectedSwitches.length > 1
         ? "GROUP SELECTED"
         : (primarySwitch.switchType as
             | "button"
             | "dial"
             | "lever"
-            | "throttle"),
-    movementAxis: (existingConfig?.movementAxis ?? "") as "X" | "Y" | "Z",
-    switchDescription: existingConfig?.switchDescription ?? "",
-    movementMode: existingConfig?.movementMode ?? false,
-    momentarySwitch: existingConfig?.momentarySwitch ?? false,
-    defaultPosition: existingConfig?.defaultPosition ?? undefined,
-    upperLimit: Number(existingConfig?.upperLimit ?? 0),
-    lowerLimit: Number(existingConfig?.lowerLimit ?? 0),
-    bleedMargins: Number(existingConfig?.bleedMargins ?? 0),
-  };
+            | "throttle");
+    defaultValues.movementAxis = (existingConfig?.movementAxis ?? "X") as
+      | "X"
+      | "Y"
+      | "Z";
+    defaultValues.switchDescription = existingConfig?.switchDescription ?? "";
+    defaultValues.movementMode = existingConfig?.movementMode ?? false;
+    defaultValues.momentarySwitch = existingConfig?.momentarySwitch ?? false;
+    defaultValues.defaultPosition = existingConfig?.defaultPosition;
+    defaultValues.upperLimit = Number(existingConfig?.upperLimit ?? 0);
+    defaultValues.lowerLimit = Number(existingConfig?.lowerLimit ?? 0);
+    defaultValues.bleedMargins = Number(existingConfig?.bleedMargins ?? 0);
+  }
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -91,6 +87,8 @@ function PlaneFormInternal({
   const { mutate: createNewSwitch, isPending } = useCreateNewSwitch();
 
   const onSubmit = async (data: FormData) => {
+    if (!hasSelectedSwitches) return;
+
     try {
       let validatedData = formSchema.parse(data);
       if (
@@ -101,18 +99,18 @@ function PlaneFormInternal({
       }
 
       if (selectedSwitches.length > 1) {
-        // for each selected switch, override the group placeholder values with the actual values.
         const batchedPayload = selectedSwitches.map((sw) => ({
           ...validatedData,
           switchName: sw.name,
           switchType: sw.switchType,
         }));
-        createNewSwitch(batchedPayload);
+        createNewSwitch(batchedPayload as any);
       } else {
+        const primarySwitch = selectedSwitches[0];
         createNewSwitch({
           ...validatedData,
           switchName: primarySwitch.name,
-          switchType: primarySwitch.switchType,
+          switchType: primarySwitch.switchType as any,
         });
       }
     } catch (error) {
@@ -128,22 +126,51 @@ function PlaneFormInternal({
           className="flex flex-col h-full"
         >
           <CardHeader>
-            <CardTitle className="text-2xl font-bold">switch config</CardTitle>
+            <CardTitle className="text-2xl font-bold">
+              {hasSelectedSwitches ? "Switch Config" : "No Switch Selected"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex-grow overflow-auto space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SwitchNameField control={form.control} />
-              <SwitchTypeField control={form.control} />
+              <SwitchNameField
+                control={form.control}
+                disabled={!hasSelectedSwitches}
+              />
+              <SwitchTypeField
+                control={form.control}
+                disabled={!hasSelectedSwitches}
+              />
             </div>
-            <SwitchDescriptionField control={form.control} />
-            <MovementModeField control={form.control} />
-            <MovementAxisField control={form.control} />
+            <SwitchDescriptionField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+            <MovementModeField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+            <MovementAxisField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <UpperLimitField control={form.control} />
-              <LowerLimitField control={form.control} />
-              <BleedMarginsField control={form.control} />
+              <UpperLimitField
+                control={form.control}
+                disabled={!hasSelectedSwitches}
+              />
+              <LowerLimitField
+                control={form.control}
+                disabled={!hasSelectedSwitches}
+              />
+              <BleedMarginsField
+                control={form.control}
+                disabled={!hasSelectedSwitches}
+              />
             </div>
-            <MomentarySwitchField control={form.control} />
+            <MomentarySwitchField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
             <div
               className={`transition-all duration-300 ease-in-out ${
                 isMomentary
@@ -151,12 +178,23 @@ function PlaneFormInternal({
                   : "max-h-0 opacity-0 overflow-hidden"
               }`}
             >
-              <DefaultPositionField control={form.control} />
+              <DefaultPositionField
+                control={form.control}
+                disabled={!hasSelectedSwitches}
+              />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? "configuring..." : "configure switch"}
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isPending || !hasSelectedSwitches}
+            >
+              {isPending
+                ? "configuring..."
+                : hasSelectedSwitches
+                ? "configure switch"
+                : "select a switch"}
             </Button>
           </CardFooter>
         </form>

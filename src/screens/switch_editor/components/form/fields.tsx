@@ -18,9 +18,10 @@ import type { Control } from "react-hook-form";
 
 interface FieldProps {
   control: Control<any>;
+  disabled?: boolean;
 }
 
-export function SwitchTypeField({ control }: FieldProps) {
+export function SwitchTypeField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -46,7 +47,7 @@ export function SwitchTypeField({ control }: FieldProps) {
   );
 }
 
-export function SwitchNameField({ control }: FieldProps) {
+export function SwitchNameField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -71,7 +72,7 @@ export function SwitchNameField({ control }: FieldProps) {
   );
 }
 
-export function SwitchDescriptionField({ control }: FieldProps) {
+export function SwitchDescriptionField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -85,6 +86,7 @@ export function SwitchDescriptionField({ control }: FieldProps) {
               {...field}
               autoComplete="off"
               className="resize-none"
+              disabled={disabled}
             />
           </FormControl>
           {error && (
@@ -96,7 +98,7 @@ export function SwitchDescriptionField({ control }: FieldProps) {
   );
 }
 
-export function MovementModeField({ control }: FieldProps) {
+export function MovementModeField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -109,6 +111,7 @@ export function MovementModeField({ control }: FieldProps) {
               <Checkbox
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={disabled}
               />
             </FormControl>
             <div className="space-y-1 leading-none">
@@ -124,7 +127,7 @@ export function MovementModeField({ control }: FieldProps) {
   );
 }
 
-export function MovementAxisField({ control }: FieldProps) {
+export function MovementAxisField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -132,7 +135,11 @@ export function MovementAxisField({ control }: FieldProps) {
       render={({ field, fieldState: { error } }) => (
         <FormItem>
           <FormLabel>Movement Axis</FormLabel>
-          <Select value={field.value || ""} onValueChange={field.onChange}>
+          <Select
+            value={field.value || ""}
+            onValueChange={field.onChange}
+            disabled={disabled}
+          >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder="Select movement axis" />
@@ -153,7 +160,7 @@ export function MovementAxisField({ control }: FieldProps) {
   );
 }
 
-export function UpperLimitField({ control }: FieldProps) {
+export function UpperLimitField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -169,6 +176,7 @@ export function UpperLimitField({ control }: FieldProps) {
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
+              disabled={disabled}
             />
           </FormControl>
           {error && (
@@ -180,7 +188,7 @@ export function UpperLimitField({ control }: FieldProps) {
   );
 }
 
-export function LowerLimitField({ control }: FieldProps) {
+export function LowerLimitField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -196,6 +204,7 @@ export function LowerLimitField({ control }: FieldProps) {
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
+              disabled={disabled}
             />
           </FormControl>
           {error && (
@@ -207,7 +216,7 @@ export function LowerLimitField({ control }: FieldProps) {
   );
 }
 
-export function BleedMarginsField({ control }: FieldProps) {
+export function BleedMarginsField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -223,6 +232,7 @@ export function BleedMarginsField({ control }: FieldProps) {
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
+              disabled={disabled}
             />
           </FormControl>
           {error && (
@@ -234,7 +244,7 @@ export function BleedMarginsField({ control }: FieldProps) {
   );
 }
 
-export function MomentarySwitchField({ control }: FieldProps) {
+export function MomentarySwitchField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -247,6 +257,7 @@ export function MomentarySwitchField({ control }: FieldProps) {
               <Checkbox
                 checked={field.value}
                 onCheckedChange={field.onChange}
+                disabled={disabled}
               />
             </FormControl>
             <div className="space-y-1 leading-none">
@@ -262,7 +273,7 @@ export function MomentarySwitchField({ control }: FieldProps) {
   );
 }
 
-export function DefaultPositionField({ control }: FieldProps) {
+export function DefaultPositionField({ control, disabled }: FieldProps) {
   return (
     <FormField
       control={control}
@@ -278,6 +289,7 @@ export function DefaultPositionField({ control }: FieldProps) {
               {...field}
               onChange={(e) => field.onChange(e.target.valueAsNumber)}
               autoComplete="off"
+              disabled={disabled}
             />
           </FormControl>
           {error && (

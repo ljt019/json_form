@@ -34,6 +34,10 @@ async function fetchSelectedConfigData(): Promise<FullConfigFile> {
   return JSON.parse(configData);
 }
 
+async function fetchInfiniteLoadingSelectedConfigData(): Promise<FullConfigFile> {
+  return new Promise(() => {}); // Promise that never resolves, keeping Suspense in fallback mode indefinitely.
+}
+
 export function useGetSelectedConfigData() {
   return useSuspenseQuery<FullConfigFile>({
     queryKey: ["selected-config-data"],
