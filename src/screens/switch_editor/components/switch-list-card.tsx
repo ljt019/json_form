@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { Suspense, useState, useMemo } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,31 +10,24 @@ import {
   XCircle,
   Search,
 } from "lucide-react";
+import { usePlaneModel } from "@/hooks/usePlaneModel";
+import { useSwitchSelection } from "@/hooks/useSwitchSelection";
+import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
+import { LoadingCard } from "@/components/loading";
 
-import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen";
-
-interface SwitchListProps {
+interface SwitchListContentProps {
   onBack: () => void;
-  switchList: SwitchItem[];
-  selectedSwitches: SwitchItem[];
-  onSelectSwitch: (
-    switchItem: SwitchItem,
-    shiftKey: boolean,
-    ctrlKey: boolean
-  ) => void;
-  modelError: string | null;
-  modelPath: string;
 }
 
-export function SwitchList({
-  onBack,
-  switchList,
-  selectedSwitches,
-  onSelectSwitch,
-  modelError,
-  modelPath,
-}: SwitchListProps) {
+function SwitchListContent({ onBack }: SwitchListContentProps) {
   const [searchTerm, setSearchTerm] = useState("");
+  const { data: planeData } = useGetSelectedConfigData();
+  const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
+  const { switchList, modelError } = usePlaneModel({ parsedData });
+  const { selectedSwitches, handleSelectSwitch } = useSwitchSelection({
+    switchList,
+  });
 
   const filteredSwitchList = useMemo(
     () =>
@@ -55,7 +48,7 @@ export function SwitchList({
         <CardContent className="flex flex-col items-center justify-center h-full text-destructive">
           <p>error loading 3d model: {modelError}</p>
           <p className="text-muted-foreground">
-            model path: {modelPath || "not provided"}
+            model path: {planeData.modelPath || "not provided"}
           </p>
         </CardContent>
       </Card>
@@ -117,7 +110,7 @@ export function SwitchList({
                           : "hover:bg-muted"
                       }`}
                       onClick={(e) =>
-                        onSelectSwitch(item, e.shiftKey, e.ctrlKey)
+                        handleSelectSwitch(item, e.shiftKey, e.ctrlKey)
                       }
                     >
                       <span>{item.name}</span>
@@ -140,5 +133,19 @@ export function SwitchList({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+interface SwitchListProps {
+  onBack: () => void;
+}
+
+export function SwitchList({ onBack }: SwitchListProps) {
+  return (
+    <div className="flex-[1.5] min-h-0">
+      <Suspense fallback={<LoadingCard />}>
+        <SwitchListContent onBack={onBack} />
+      </Suspense>
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import {
@@ -25,17 +24,18 @@ import {
 } from "./fields";
 import useCreateNewSwitch from "@/hooks/mutations/useCreateNewSwitch";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
-import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
+import { usePlaneModel } from "@/hooks/usePlaneModel";
+import { useSwitchSelection } from "@/hooks/useSwitchSelection";
 
-interface PlaneFormProps {
-  selectedSwitches: SwitchItem[];
-}
-
-export function PlaneForm({ selectedSwitches }: PlaneFormProps) {
-  const hasSelectedSwitches = selectedSwitches.length > 0;
+function FormContent() {
   const { data: planeData } = useGetSelectedConfigData();
+  const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
+  const { switchList } = usePlaneModel({ parsedData });
+  const { selectedSwitches } = useSwitchSelection({ switchList });
 
-  // Initialize with empty values when no switch is selected
+  const hasSelectedSwitches = selectedSwitches.length > 0;
+
   const defaultValues: FormData = {
     switchName: "",
     switchType: "button",
@@ -49,7 +49,6 @@ export function PlaneForm({ selectedSwitches }: PlaneFormProps) {
     bleedMargins: 0,
   };
 
-  // Override with actual values when switches are selected
   if (hasSelectedSwitches) {
     const primarySwitch = selectedSwitches[0];
     const existingConfig = planeData?.switches[primarySwitch.name];
@@ -83,7 +82,6 @@ export function PlaneForm({ selectedSwitches }: PlaneFormProps) {
   });
 
   const isMomentary = form.watch("momentarySwitch");
-
   const { mutate: createNewSwitch, isPending } = useCreateNewSwitch();
 
   const onSubmit = async (data: FormData) => {
@@ -119,86 +117,92 @@ export function PlaneForm({ selectedSwitches }: PlaneFormProps) {
   };
 
   return (
+    <Form {...form}>
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col h-full"
+      >
+        <CardHeader>
+          <CardTitle className="text-2xl font-bold">
+            {hasSelectedSwitches ? "Switch Config" : "No Switch Selected"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow overflow-auto space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SwitchNameField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+            <SwitchTypeField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+          </div>
+          <SwitchDescriptionField
+            control={form.control}
+            disabled={!hasSelectedSwitches}
+          />
+          <MovementModeField
+            control={form.control}
+            disabled={!hasSelectedSwitches}
+          />
+          <MovementAxisField
+            control={form.control}
+            disabled={!hasSelectedSwitches}
+          />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <UpperLimitField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+            <LowerLimitField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+            <BleedMarginsField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+          </div>
+          <MomentarySwitchField
+            control={form.control}
+            disabled={!hasSelectedSwitches}
+          />
+          <div
+            className={`transition-all duration-300 ease-in-out ${
+              isMomentary
+                ? "max-h-20 opacity-100"
+                : "max-h-0 opacity-0 overflow-hidden"
+            }`}
+          >
+            <DefaultPositionField
+              control={form.control}
+              disabled={!hasSelectedSwitches}
+            />
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isPending || !hasSelectedSwitches}
+          >
+            {isPending
+              ? "configuring..."
+              : hasSelectedSwitches
+              ? "configure switch"
+              : "select a switch"}
+          </Button>
+        </CardFooter>
+      </form>
+    </Form>
+  );
+}
+
+export function PlaneForm() {
+  return (
     <Card className="flex flex-col h-full">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col h-full"
-        >
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold">
-              {hasSelectedSwitches ? "Switch Config" : "No Switch Selected"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex-grow overflow-auto space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <SwitchNameField
-                control={form.control}
-                disabled={!hasSelectedSwitches}
-              />
-              <SwitchTypeField
-                control={form.control}
-                disabled={!hasSelectedSwitches}
-              />
-            </div>
-            <SwitchDescriptionField
-              control={form.control}
-              disabled={!hasSelectedSwitches}
-            />
-            <MovementModeField
-              control={form.control}
-              disabled={!hasSelectedSwitches}
-            />
-            <MovementAxisField
-              control={form.control}
-              disabled={!hasSelectedSwitches}
-            />
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <UpperLimitField
-                control={form.control}
-                disabled={!hasSelectedSwitches}
-              />
-              <LowerLimitField
-                control={form.control}
-                disabled={!hasSelectedSwitches}
-              />
-              <BleedMarginsField
-                control={form.control}
-                disabled={!hasSelectedSwitches}
-              />
-            </div>
-            <MomentarySwitchField
-              control={form.control}
-              disabled={!hasSelectedSwitches}
-            />
-            <div
-              className={`transition-all duration-300 ease-in-out ${
-                isMomentary
-                  ? "max-h-20 opacity-100"
-                  : "max-h-0 opacity-0 overflow-hidden"
-              }`}
-            >
-              <DefaultPositionField
-                control={form.control}
-                disabled={!hasSelectedSwitches}
-              />
-            </div>
-          </CardContent>
-          <CardFooter>
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isPending || !hasSelectedSwitches}
-            >
-              {isPending
-                ? "configuring..."
-                : hasSelectedSwitches
-                ? "configure switch"
-                : "select a switch"}
-            </Button>
-          </CardFooter>
-        </form>
-      </Form>
+      <FormContent />
     </Card>
   );
 }

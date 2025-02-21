@@ -1,46 +1,21 @@
 import { Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Html } from "@react-three/drei";
-import { ErrorBoundary } from "react-error-boundary";
+import { OrbitControls } from "@react-three/drei";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { CuboidIcon as Cube } from "lucide-react";
-
-import { SwitchItem } from "@/screens/switch_editor/SwitchEditorScreen";
 import { RotatingPrimitive } from "@/components/rotating-primitive";
-import { ErrorCard } from "@/components/error";
+import { useSwitchSelection } from "@/hooks/useSwitchSelection";
+import { usePlaneModel } from "@/hooks/usePlaneModel";
+import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
+import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 import { LoadingCard } from "@/components/loading";
 
-// Separate component for 3D content to isolate Suspense boundary
-function ModelViewer({
-  selectedSwitch,
-}: {
-  selectedSwitch: SwitchItem | null;
-}) {
-  // If we have no switch selected, render an empty scene
-  if (!selectedSwitch) {
-    return (
-      <Canvas camera={{ position: [0, 5, 12], fov: 50 }}>
-        <ambientLight intensity={1.2} />
-        <OrbitControls
-          enablePan={false}
-          maxDistance={0.2}
-          minDistance={0.2}
-          zoomSpeed={0.5}
-          target={[0, 0, 0]}
-        />
-      </Canvas>
-    );
-  }
+function ModelScene() {
+  const { data: planeData } = useGetSelectedConfigData();
+  const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
+  const { switchList } = usePlaneModel({ parsedData });
+  const { displayedSwitch } = useSwitchSelection({ switchList });
 
-  return (
-    <Canvas camera={{ position: [0, 5, 12], fov: 50 }}>
-      <Scene selectedSwitch={selectedSwitch} />
-    </Canvas>
-  );
-}
-
-// Separate component for scene content to handle model loading
-function Scene({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
   return (
     <>
       <ambientLight intensity={1.2} />
@@ -50,12 +25,14 @@ function Scene({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
         groundColor={0x444444}
         intensity={0.8}
       />
-      <RotatingPrimitive
-        object={selectedSwitch.mesh}
-        scale={[0.1, 0.1, 0.1]}
-        position={[0, 0, 0]}
-        rotationSpeed={0.005}
-      />
+      {displayedSwitch && (
+        <RotatingPrimitive
+          object={displayedSwitch.mesh}
+          scale={[0.1, 0.1, 0.1]}
+          position={[0, 0, 0]}
+          rotationSpeed={0.005}
+        />
+      )}
       <OrbitControls
         enablePan={false}
         maxDistance={0.2}
@@ -67,13 +44,7 @@ function Scene({ selectedSwitch }: { selectedSwitch: SwitchItem }) {
   );
 }
 
-interface SwitchModelPreviewProps {
-  selectedSwitch: SwitchItem | null;
-}
-
-export function SwitchModelPreview({
-  selectedSwitch,
-}: SwitchModelPreviewProps) {
+function ModelPreviewContent() {
   return (
     <Card className="h-full flex flex-col">
       <CardHeader>
@@ -84,25 +55,21 @@ export function SwitchModelPreview({
       </CardHeader>
       <CardContent className="flex-1 min-h-0">
         <div className="h-full w-full bg-muted rounded-md">
-          <ErrorBoundary
-            fallback={
-              <Html>
-                <ErrorCard />
-              </Html>
-            }
-          >
-            <Suspense
-              fallback={
-                <Html>
-                  <LoadingCard />
-                </Html>
-              }
-            >
-              <ModelViewer selectedSwitch={selectedSwitch} />
-            </Suspense>
-          </ErrorBoundary>
+          <Canvas camera={{ position: [0, 5, 12], fov: 50 }}>
+            <ModelScene />
+          </Canvas>
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+export function SwitchModelPreview() {
+  return (
+    <div className="flex-[1] min-h-0">
+      <Suspense fallback={<LoadingCard />}>
+        <ModelPreviewContent />
+      </Suspense>
+    </div>
   );
 }
