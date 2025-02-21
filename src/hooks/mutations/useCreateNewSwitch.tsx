@@ -1,11 +1,9 @@
-// useCreateNewSwitch.ts
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 import type { FormData } from "@/screens/switch_editor/components/form/schema";
 import { toast } from "react-hot-toast";
 
 async function createNewSwitch(formData: FormData | FormData[]) {
-  // match the rust param name exactly
   return invoke("add_new_switch", { formData: formData }).catch((err) => {
     throw new Error("failed to add new switch: " + err);
   });

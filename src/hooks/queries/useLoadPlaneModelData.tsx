@@ -1,7 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { invoke } from "@tauri-apps/api/core";
 
-// These types represent what the backend sends.
 export interface ParsedSwitchItem {
   meshName: string;
   prettyName: string;

@@ -27,7 +27,6 @@ pub fn add_new_teleport_zone(
     println!("{:?}", current_json_file_name);
     println!("{:?}", &form_data);
 
-    // ensure directory exists
     if !plane_config_folder_path.exists() {
         std::fs::create_dir_all(&plane_config_folder_path)
             .map_err(|e| format!("failed to create config directory: {}", e))?;

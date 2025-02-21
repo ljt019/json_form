@@ -6,10 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plane, Check, Loader2 } from "lucide-react";
 import { invoke } from "@tauri-apps/api/core";
-// Import the dialog plugin.
 import { open } from "@tauri-apps/plugin-dialog";
 
-// Utility to remove .json extension.
 export function removeJsonExtension(fileName: string) {
   return fileName.replace(/\.json$/i, "");
 }
@@ -42,7 +40,6 @@ interface FileDropzoneProps {
   onFileSelect: (filePath: string) => void;
 }
 
-// Updated FileDropzone component: now just a button that triggers the Tauri file dialog.
 export function FileDropzone({ onFileSelect }: FileDropzoneProps) {
   const handleFileExplorer = async () => {
     const selected = await open({
