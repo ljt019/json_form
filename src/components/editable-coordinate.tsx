@@ -29,7 +29,6 @@ export function EditableCoordinate({
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value.toFixed(precision));
 
-  // Format a number according to the specified precision
   const formatValue = useCallback(
     (val: number) => val.toFixed(precision),
     [precision]
@@ -44,7 +43,6 @@ export function EditableCoordinate({
     setIsEditing(false);
     let newValue = Number.parseFloat(tempValue);
 
-    // Apply min/max constraints
     if (!isNaN(newValue)) {
       if (min !== undefined) newValue = Math.max(min, newValue);
       if (max !== undefined) newValue = Math.min(max, newValue);

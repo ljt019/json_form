@@ -5,8 +5,6 @@ pub fn remove_teleport_zone(
     app_handle: tauri::AppHandle,
     teleport_zone_key: String,
 ) -> Result<String, String> {
-    use serde_json::json;
-    
     println!("Removing teleport zone: {}", teleport_zone_key);
 
     // Get current config file info
@@ -20,11 +18,14 @@ pub fn remove_teleport_zone(
     if !teleport_zones_obj.contains_key(&teleport_zone_key) {
         return Err(format!("Teleport zone '{}' not found", teleport_zone_key));
     }
-    
+
     teleport_zones_obj.remove(&teleport_zone_key);
 
     // Save the updated JSON
     utils::save_json_file(&file_path, &json_data)?;
 
-    Ok(format!("Teleport zone '{}' removed successfully", teleport_zone_key))
+    Ok(format!(
+        "Teleport zone '{}' removed successfully",
+        teleport_zone_key
+    ))
 }

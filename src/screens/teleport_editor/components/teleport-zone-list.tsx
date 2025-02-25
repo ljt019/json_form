@@ -1,7 +1,7 @@
 import type React from "react";
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, Trash2 } from "lucide-react";
+import { FileText, Trash2, Copy } from "lucide-react";
 import type { TeleportZoneItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { SelectableList } from "@/components/selectable-list";
@@ -19,6 +19,7 @@ interface TeleportZoneListProps {
   onDeleteTeleportZone: (zone: TeleportZoneItem) => void;
   onUpdateTeleportZone: (zone: TeleportZoneItem) => void;
   onRenameTeleportZone?: (oldName: string, newZone: TeleportZoneItem) => void;
+  onDuplicateTeleportZone?: (zone: TeleportZoneItem) => void;
 }
 
 export function TeleportZoneList({
@@ -29,6 +30,7 @@ export function TeleportZoneList({
   onDeleteTeleportZone,
   onUpdateTeleportZone,
   onRenameTeleportZone,
+  onDuplicateTeleportZone,
 }: TeleportZoneListProps) {
   const navigate = useNavigate();
   const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
@@ -161,21 +163,40 @@ export function TeleportZoneList({
                 precision={2}
                 step={0.1}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className={`w-8 h-8 p-1 ml-2 opacity-0 group-hover:opacity-100 hover:text-red-800 transition-opacity ${
-                  isSelected
-                    ? "hover:bg-primary-foreground/20"
-                    : "hover:bg-muted-foreground/20"
-                }`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDeleteTeleportZone(zone);
-                }}
-              >
-                <Trash2 className="w-4 h-4" />
-              </Button>
+              <div className="pl-1 flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`w-8 h-8 p-1 opacity-0 group-hover:opacity-100 hover:text-blue-600 transition-opacity ${
+                    isSelected
+                      ? "hover:bg-primary-foreground/20"
+                      : "hover:bg-muted-foreground/20"
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDuplicateTeleportZone?.(zone);
+                  }}
+                  title="Duplicate teleport zone"
+                >
+                  <Copy className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`w-8 h-8 p-1 opacity-0 group-hover:opacity-100 hover:text-red-800 transition-opacity ${
+                    isSelected
+                      ? "hover:bg-primary-foreground/20"
+                      : "hover:bg-muted-foreground/20"
+                  }`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteTeleportZone(zone);
+                  }}
+                  title="Delete teleport zone"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
           </div>
         )}

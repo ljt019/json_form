@@ -1,10 +1,15 @@
-import React from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { AlertTriangle, RefreshCw, XCircle, Info } from 'lucide-react';
+import React from "react";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { AlertTriangle, RefreshCw, XCircle, Info } from "lucide-react";
 
-// Standard error levels with specific styling
-export type ErrorLevel = 'error' | 'warning' | 'info';
+export type ErrorLevel = "error" | "warning" | "info";
 
 interface ErrorDisplayProps {
   title?: string;
@@ -16,48 +21,47 @@ interface ErrorDisplayProps {
   showDetails?: boolean;
 }
 
-// Maps error levels to styling
 const levelConfig = {
   error: {
     icon: XCircle,
-    color: 'text-destructive',
-    bgColor: 'bg-destructive/10',
-    borderColor: 'border-destructive/20',
+    color: "text-destructive",
+    bgColor: "bg-destructive/10",
+    borderColor: "border-destructive/20",
   },
   warning: {
     icon: AlertTriangle,
-    color: 'text-amber-500',
-    bgColor: 'bg-amber-50',
-    borderColor: 'border-amber-200',
+    color: "text-amber-500",
+    bgColor: "bg-amber-50",
+    borderColor: "border-amber-200",
   },
   info: {
     icon: Info,
-    color: 'text-blue-500',
-    bgColor: 'bg-blue-50',
-    borderColor: 'border-blue-200',
+    color: "text-blue-500",
+    bgColor: "bg-blue-50",
+    borderColor: "border-blue-200",
   },
 };
 
-export function ErrorCard({ 
+export function ErrorCard({
   title = "Error",
   message = "An unexpected error occurred",
-  level = 'error',
+  level = "error",
   retry,
   dismiss,
   details,
-  showDetails = false 
+  showDetails = false,
 }: ErrorDisplayProps) {
   const [isExpanded, setIsExpanded] = React.useState(showDetails);
   const { icon: Icon, color, bgColor, borderColor } = levelConfig[level];
 
   // Format error details for display
   const formattedDetails = React.useMemo(() => {
-    if (!details) return '';
-    
-    if (typeof details === 'string') {
+    if (!details) return "";
+
+    if (typeof details === "string") {
       return details;
     }
-    
+
     try {
       return JSON.stringify(details, null, 2);
     } catch (e) {
@@ -73,21 +77,21 @@ export function ErrorCard({
           {title}
         </CardTitle>
       </CardHeader>
-      
+
       <CardContent className="pb-2">
         <p className="text-sm">{message}</p>
-        
+
         {details && (
           <>
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="p-0 h-auto mt-2 text-xs"
               onClick={() => setIsExpanded(!isExpanded)}
             >
-              {isExpanded ? 'Hide details' : 'Show details'}
+              {isExpanded ? "Hide details" : "Show details"}
             </Button>
-            
+
             {isExpanded && (
               <pre className="text-xs mt-2 p-2 bg-muted rounded-md overflow-auto max-h-[200px]">
                 {formattedDetails}
@@ -96,7 +100,7 @@ export function ErrorCard({
           </>
         )}
       </CardContent>
-      
+
       {(retry || dismiss) && (
         <CardFooter className="flex justify-end gap-2 pt-2">
           {retry && (
@@ -105,7 +109,7 @@ export function ErrorCard({
               Retry
             </Button>
           )}
-          
+
           {dismiss && (
             <Button size="sm" variant="ghost" onClick={dismiss}>
               Dismiss
@@ -117,11 +121,10 @@ export function ErrorCard({
   );
 }
 
-// Helper function for creating error objects with standard format
 export function createError(
-  message: string, 
-  details?: any, 
-  level: ErrorLevel = 'error'
+  message: string,
+  details?: any,
+  level: ErrorLevel = "error"
 ): {
   message: string;
   details?: any;
@@ -132,6 +135,6 @@ export function createError(
     message,
     details,
     level,
-    timestamp: Date.now()
+    timestamp: Date.now(),
   };
 }
