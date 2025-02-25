@@ -15,4 +15,4 @@ pub use config_file_management::{
 pub use load_existing_plane_config_files::load_existing_plane_config_files;
 pub use load_plane_model_data::load_plane_model_data;
 pub use remove_teleport_zone::remove_teleport_zone;
-pub use update_teleport_zone::update_teleport_zone;
+pub use update_teleport_zone::{update_teleport_zone, rename_teleport_zone};

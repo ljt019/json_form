@@ -39,6 +39,7 @@ fn main() {
             add_new_switch,
             add_new_teleport_zone,
             remove_teleport_zone,
+            rename_teleport_zone,
             update_teleport_zone,
             open_plane_config_folder,
             load_existing_plane_config_files,

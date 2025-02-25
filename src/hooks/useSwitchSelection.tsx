@@ -42,7 +42,6 @@ export function SwitchSelectionProvider({
       withCtrlSelect: true,
     });
 
-  // Provide backward compatible API for existing components
   const handleSelectSwitch = useCallback(
     (sw: SwitchItem, shiftKey: boolean, ctrlKey: boolean) => {
       startTransition(() => {

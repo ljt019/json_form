@@ -6,9 +6,11 @@ interface UseTeleportZoneSelectionOptions {
   teleportZones?: TeleportZoneItem[];
 }
 
-export function useTeleportZoneSelection(options: UseTeleportZoneSelectionOptions = {}) {
+export function useTeleportZoneSelection(
+  options: UseTeleportZoneSelectionOptions = {}
+) {
   const { teleportZones = [] } = options;
-  
+
   const {
     selectedItems: selectedTeleportZones,
     hoveredItem: hoveredTeleportZone,
@@ -19,7 +21,6 @@ export function useTeleportZoneSelection(options: UseTeleportZoneSelectionOption
     withShiftSelect: false,
   });
 
-  // Provide backward compatible API
   const handleSelectTeleportZone = useCallback(
     (zone: TeleportZoneItem, shiftKey: boolean) => {
       handleSelect(zone, shiftKey, false);
@@ -39,7 +40,6 @@ export function useTeleportZoneSelection(options: UseTeleportZoneSelectionOption
     hoveredTeleportZone,
     handleSelectTeleportZone,
     handleHoverTeleportZone,
-    // Also expose the new API for future components
     handleSelect,
     handleHover,
   };

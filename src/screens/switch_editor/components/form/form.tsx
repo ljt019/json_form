@@ -1,5 +1,3 @@
-"use client";
-
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -76,7 +74,7 @@ function FormContent() {
         upperLimit: Number(existingConfig?.upperLimit ?? 0),
         lowerLimit: Number(existingConfig?.lowerLimit ?? 0),
         bleedMargins: Number(existingConfig?.bleedMargins ?? 0),
-        rawNodeName: existingConfig?.rawNodeName ?? primarySwitch.mesh.name, // Use mesh.name from the Three.js object
+        rawNodeName: existingConfig?.rawNodeName ?? primarySwitch.mesh.name,
       });
     }
   }, [selectedSwitches, planeData, form, hasSelectedSwitches]);

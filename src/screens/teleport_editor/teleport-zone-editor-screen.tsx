@@ -7,13 +7,18 @@ import { useTeleportZoneSelection } from "@/hooks/useTeleportZoneSelection";
 import { ErrorCard } from "@/components/error";
 import { LoadingCard } from "@/components/loading";
 import { useRemoveTeleportZone } from "@/hooks/mutations/useRemoveTeleportZone";
-import { useUpdateTeleportZone } from "@/hooks/mutations/useUpdateTeleportZone";
+import {
+  useUpdateTeleportZone,
+  useRenameTeleportZone,
+} from "@/hooks/mutations/useUpdateTeleportZone";
 import type { TeleportZoneItem } from "@/types";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 export function TeleportEditorScreen() {
   return (
-    <ErrorBoundary fallback={<ErrorCard />}>
+    <ErrorBoundary
+      fallback={<ErrorCard message={"Teleport Screen Failed to Load"} />}
+    >
       <Suspense fallback={<LoadingCard />}>
         <TeleportEditorContent />
       </Suspense>
@@ -28,7 +33,8 @@ function TeleportEditorContent() {
   );
   const { mutate: removeTeleportZone } = useRemoveTeleportZone();
   const { mutate: updateTeleportZone } = useUpdateTeleportZone();
-  
+  const { mutate: renameTeleportZone } = useRenameTeleportZone();
+
   const teleportZoneList = useMemo(() => {
     const zones = planeData?.teleportZones || {};
     return Object.keys(zones)
@@ -40,7 +46,7 @@ function TeleportEditorContent() {
         z: zones[key].z,
       }));
   }, [planeData]);
-  
+
   const {
     selectedTeleportZones,
     handleSelectTeleportZone,
@@ -53,6 +59,13 @@ function TeleportEditorContent() {
 
   const handleUpdateTeleportZone = (updatedZone: TeleportZoneItem) => {
     updateTeleportZone(updatedZone);
+  };
+
+  const handleRenameTeleportZone = (
+    oldName: string,
+    updatedZone: TeleportZoneItem
+  ) => {
+    renameTeleportZone({ oldName, updatedZone });
   };
 
   if (!planeData?.modelPath) {
@@ -71,6 +84,7 @@ function TeleportEditorContent() {
               onHoverTeleportZone={handleHoverTeleportZone}
               onDeleteTeleportZone={handleDeleteTeleportZone}
               onUpdateTeleportZone={handleUpdateTeleportZone}
+              onRenameTeleportZone={handleRenameTeleportZone}
             />
           </div>
         </div>

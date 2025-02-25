@@ -1,9 +1,14 @@
+import type React from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, Trash2 } from "lucide-react";
 import type { TeleportZoneItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { SelectableList } from "@/components/selectable-list";
-import { CoordinateGroup } from "@/components/coordinate-group";
+import {
+  CoordinateGroup,
+  type Coordinates3D,
+} from "@/components/coordinate-group";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 interface TeleportZoneListProps {
@@ -13,6 +18,7 @@ interface TeleportZoneListProps {
   onHoverTeleportZone: (zone: TeleportZoneItem | null) => void;
   onDeleteTeleportZone: (zone: TeleportZoneItem) => void;
   onUpdateTeleportZone: (zone: TeleportZoneItem) => void;
+  onRenameTeleportZone?: (oldName: string, newZone: TeleportZoneItem) => void;
 }
 
 export function TeleportZoneList({
@@ -22,18 +28,99 @@ export function TeleportZoneList({
   onHoverTeleportZone,
   onDeleteTeleportZone,
   onUpdateTeleportZone,
+  onRenameTeleportZone,
 }: TeleportZoneListProps) {
   const navigate = useNavigate();
+  const [editingZoneId, setEditingZoneId] = useState<string | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Adapter function for the SelectableList component
-  const handleSelect = (zone: TeleportZoneItem, shiftKey: boolean, ctrlKey: boolean) => {
+  const handleSelect = (
+    zone: TeleportZoneItem,
+    shiftKey: boolean,
+    _ctrlKey: boolean
+  ) => {
+    if (editingZoneId === zone.name) return;
     onSelectTeleportZone(zone, shiftKey);
   };
+
+  const handleCoordinateChange = (
+    zone: TeleportZoneItem,
+    coordinates: Coordinates3D
+  ) => {
+    onUpdateTeleportZone({
+      ...zone,
+      x: coordinates.x,
+      y: coordinates.y,
+      z: coordinates.z,
+    });
+  };
+
+  const handleStartEditing = (zone: TeleportZoneItem, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingZoneId(zone.name);
+    setEditingNameValue(zone.name);
+  };
+
+  const handleNameSubmit = (
+    originalZone: TeleportZoneItem,
+    e: React.KeyboardEvent
+  ) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      submitNameChange(originalZone);
+    } else if (e.key === "Escape") {
+      resetEditing();
+    }
+  };
+
+  const submitNameChange = (originalZone: TeleportZoneItem) => {
+    if (editingNameValue === originalZone.name) {
+      resetEditing();
+      return;
+    }
+
+    if (onRenameTeleportZone) {
+      const updatedZone = {
+        ...originalZone,
+        name: editingNameValue,
+      };
+      onRenameTeleportZone(originalZone.name, updatedZone);
+    } else {
+      onUpdateTeleportZone({
+        ...originalZone,
+        name: editingNameValue,
+      });
+    }
+
+    resetEditing();
+  };
+
+  const resetEditing = useCallback(() => {
+    setEditingZoneId(null);
+    setEditingNameValue("");
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        inputRef.current &&
+        !inputRef.current.contains(event.target as Node)
+      ) {
+        resetEditing();
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [resetEditing]);
 
   return (
     <ErrorBoundary>
       <SelectableList
-        items={teleportZoneList}
+        items={teleportZoneList.sort((a, b) => a.name.localeCompare(b.name))}
         selectedItems={selectedTeleportZones}
         onSelect={handleSelect}
         onHover={onHoverTeleportZone}
@@ -43,15 +130,36 @@ export function TeleportZoneList({
         searchPlaceholder="Search teleport zones..."
         renderItem={(zone, isSelected) => (
           <div className="flex-1 flex items-center justify-between mr-2">
-            <span>{zone.name}</span>
+            {editingZoneId === zone.name ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={editingNameValue}
+                className={`bg-transparent border border-primary focus:ring-2 focus:ring-primary rounded px-1 py-0.5 ${
+                  isSelected ? "text-black" : ""
+                }`}
+                onChange={(e) => setEditingNameValue(e.target.value)}
+                onKeyDown={(e) => handleNameSubmit(zone, e)}
+                onClick={(e) => e.stopPropagation()}
+                onBlur={() => submitNameChange(zone)}
+                autoFocus
+              />
+            ) : (
+              <span
+                className={`px-1 py-0.5 rounded hover:bg-muted/50 cursor-text ${
+                  isSelected ? "text-primary-foreground" : "text-foreground"
+                }`}
+                onClick={(e) => handleStartEditing(zone, e)}
+              >
+                {zone.name}
+              </span>
+            )}
             <div className="flex items-center">
               <CoordinateGroup
-                x={zone.x}
-                y={zone.y}
-                z={zone.z}
-                onChangeX={(value) => onUpdateTeleportZone({ ...zone, x: value })}
-                onChangeY={(value) => onUpdateTeleportZone({ ...zone, y: value })}
-                onChangeZ={(value) => onUpdateTeleportZone({ ...zone, z: value })}
+                coordinates={{ x: zone.x, y: zone.y, z: zone.z }}
+                onChange={(coords) => handleCoordinateChange(zone, coords)}
+                precision={2}
+                step={0.1}
               />
               <Button
                 variant="ghost"
