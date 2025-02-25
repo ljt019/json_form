@@ -1,4 +1,4 @@
-import { useMemo, Suspense, useState } from "react";
+import { useMemo, Suspense } from "react";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
 import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 import { TeleportZoneList } from "./components/teleport-zone-list";
@@ -7,16 +7,10 @@ import { useTeleportZoneSelection } from "@/hooks/useTeleportZoneSelection";
 import { ErrorCard } from "@/components/error";
 import { LoadingCard } from "@/components/loading";
 import { useRemoveTeleportZone } from "@/hooks/mutations/useRemoveTeleportZone";
-import {
-  useUpdateTeleportZone,
-  useRenameTeleportZone,
-} from "@/hooks/mutations/useUpdateTeleportZone";
-import { useDuplicateTeleportZone } from "@/hooks/mutations/useCreateNewTeleportZone";
+import { useUpdateTeleportZone } from "@/hooks/mutations/useUpdateTeleportZone";
+import { useDuplicateTeleportZone } from "@/hooks/mutations/useDuplicateTeleportZone";
+import { useRenameTeleportZone } from "@/hooks/mutations/useRenameTeleportZone";
 import type { TeleportZoneItem } from "@/types";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 export function TeleportEditorScreen() {
@@ -40,16 +34,11 @@ function TeleportEditorContent() {
   const { mutate: updateTeleportZone } = useUpdateTeleportZone();
   const { mutate: renameTeleportZone } = useRenameTeleportZone();
   const { mutate: duplicateTeleportZone } = useDuplicateTeleportZone();
-  
-  // State for duplicate zone dialog
-  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
-  const [zoneToDuplicate, setZoneToDuplicate] = useState<TeleportZoneItem | null>(null);
-  const [newZoneName, setNewZoneName] = useState("");
 
   const teleportZoneList = useMemo(() => {
     const zones = planeData?.teleportZones || {};
     return Object.keys(zones)
-      .sort((a, b) => a.localeCompare(b)) // Sort alphabetically by name
+      .sort((a, b) => a.localeCompare(b))
       .map((key) => ({
         name: key,
         x: zones[key].x,
@@ -62,7 +51,9 @@ function TeleportEditorContent() {
     selectedTeleportZones,
     handleSelectTeleportZone,
     handleHoverTeleportZone,
-  } = useTeleportZoneSelection({ teleportZones: teleportZoneList });
+  } = useTeleportZoneSelection({
+    teleportZones: teleportZoneList,
+  });
 
   const handleDeleteTeleportZone = (zone: TeleportZoneItem) => {
     removeTeleportZone(zone.name);
@@ -78,23 +69,21 @@ function TeleportEditorContent() {
   ) => {
     renameTeleportZone({ oldName, updatedZone });
   };
-  
+
   const handleDuplicateTeleportZone = (zone: TeleportZoneItem) => {
-    setZoneToDuplicate(zone);
-    setNewZoneName(`${zone.name}_copy`);
-    setIsDuplicateDialogOpen(true);
-  };
-  
-  const handleDuplicateSubmit = () => {
-    if (zoneToDuplicate && newZoneName.trim()) {
-      duplicateTeleportZone({ 
-        zone: zoneToDuplicate, 
-        newName: newZoneName.trim() 
-      });
-      setIsDuplicateDialogOpen(false);
-      setZoneToDuplicate(null);
-      setNewZoneName("");
+    const baseName = zone.name;
+    let newName = `${baseName}(1)`;
+    let counter = 1;
+
+    while (teleportZoneList.some((z) => z.name === newName)) {
+      counter++;
+      newName = `${baseName}(${counter})`;
     }
+
+    duplicateTeleportZone({
+      zone: zone,
+      newName: newName,
+    });
   };
 
   if (!planeData?.modelPath) {
@@ -126,42 +115,6 @@ function TeleportEditorContent() {
           />
         </div>
       </div>
-      
-      {/* Duplicate Teleport Zone Dialog */}
-      <Dialog open={isDuplicateDialogOpen} onOpenChange={setIsDuplicateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Duplicate Teleport Zone</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="name" className="text-right">
-                Name
-              </Label>
-              <Input
-                id="name"
-                value={newZoneName}
-                onChange={(e) => setNewZoneName(e.target.value)}
-                className="col-span-3"
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleDuplicateSubmit();
-                  }
-                }}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDuplicateDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleDuplicateSubmit} disabled={!newZoneName.trim()}>
-              Duplicate
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
