@@ -80,6 +80,8 @@ pub struct FullConfigFile {
     pub model_path: String,
     pub teleport_zones: HashMap<String, TeleportZone>,
     pub switches: HashMap<String, SwitchData>,
+    #[serde(default)]
+    pub non_switch_raw_node_names: Vec<String>,
 }
 
 #[derive(Serialize)]

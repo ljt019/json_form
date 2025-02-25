@@ -1,81 +1,44 @@
-use serde_json::Value as Json;
-use tauri::Manager;
-
 use crate::models::{NewSwitchSubmission, SoundEffect, SwitchData, SwitchType};
-use crate::OUTPUT_FOLDER_PATH;
+use crate::utils;
+use serde_json::Value as Json;
 
 #[tauri::command]
-pub fn add_new_switch(app_handle: tauri::AppHandle, form_data: Json) -> Result<String, String> {
-    use serde_json::json;
+pub async fn add_new_switch(
+    app_handle: tauri::AppHandle,
+    form_data: Json,
+) -> Result<String, String> {
+    println!("Adding switch: {:?}", &form_data);
 
-    // Get app state to determine the current file name
-    let state = app_handle.state::<std::sync::Mutex<crate::AppData>>();
-    let state = state.lock().unwrap();
-    let current_json_file_name = state.current_json_file.clone();
+    // Get current config file info
+    let (_, file_path, mut json_data) = utils::get_current_config(&app_handle)?;
 
-    // Get the app data directory and construct the file path
-    let app_data_dir = app_handle
-        .path()
-        .app_data_dir()
-        .map_err(|_| "Couldn't find app_data_dir".to_string())?;
-    let plane_config_folder_path = app_data_dir.join(OUTPUT_FOLDER_PATH);
-    let current_json_file_path = plane_config_folder_path.join(current_json_file_name.clone());
-
-    println!("{:?}", current_json_file_name);
-    println!("{:?}", &form_data);
-
-    // Ensure the directory exists (creates it if it doesn't)
-    if !plane_config_folder_path.exists() {
-        std::fs::create_dir_all(&plane_config_folder_path)
-            .map_err(|e| format!("Failed to create config directory: {}", e))?;
-    }
-
-    // Read and parse the existing JSON file into a serde_json::Value so that we can preserve all keys.
-    let mut json_data: serde_json::Value = if current_json_file_path.exists() {
-        let file_content = std::fs::read_to_string(&current_json_file_path)
-            .map_err(|e| format!("Failed to read JSON file: {}", e))?;
-        if file_content.trim().is_empty() {
-            json!({})
-        } else {
-            serde_json::from_str(&file_content).unwrap_or_else(|_| json!({}))
-        }
-    } else {
-        json!({})
-    };
-
-    // Ensure the root is an object.
-    if !json_data.is_object() {
-        return Err("Invalid JSON structure: expected an object at the root".to_string());
-    }
-
-    // Get (or create) the "switches" object within the root.
-    let switches = json_data
-        .as_object_mut()
+    // Check for nonSwitchRawNodeNames first
+    if !json_data
+        .as_object()
         .unwrap()
-        .entry("switches")
-        .or_insert(json!({}));
-    if !switches.is_object() {
-        return Err("Invalid JSON structure: expected 'switches' to be an object".to_string());
+        .contains_key("nonSwitchRawNodeNames")
+    {
+        let _ = crate::commands::load_plane_model_data::load_plane_model_data(app_handle.clone())
+            .await?;
+        json_data = utils::load_json_file(&file_path)?;
     }
 
-    // Check if form_data is an array (batched request) or a single object.
+    // Now get the switches section after potential update
+    let switches = utils::ensure_section_exists(&mut json_data, "switches")?;
+
+    // Process the form data
     if form_data.is_array() {
-        let submissions: Vec<NewSwitchSubmission> = serde_json::from_value(form_data)
-            .map_err(|e| format!("Failed to deserialize batched JSON: {}", e))?;
+        let submissions: Vec<NewSwitchSubmission> = utils::deserialize_json(form_data)?;
         for submission in submissions {
             process_single_switch(&submission, switches)?;
         }
     } else {
-        let submission: NewSwitchSubmission = serde_json::from_value(form_data)
-            .map_err(|e| format!("Failed to deserialize JSON: {}", e))?;
+        let submission: NewSwitchSubmission = utils::deserialize_json(form_data)?;
         process_single_switch(&submission, switches)?;
     }
 
-    // Serialize the updated JSON with pretty formatting and write it back to the file.
-    let updated_json = serde_json::to_string_pretty(&json_data)
-        .map_err(|e| format!("Failed to serialize updated JSON: {}", e))?;
-    std::fs::write(&current_json_file_path, updated_json)
-        .map_err(|e| format!("Failed to write JSON file: {}", e))?;
+    // Save the updated JSON
+    utils::save_json_file(&file_path, &json_data)?;
 
     Ok("Switch added/updated successfully".to_string())
 }
@@ -104,16 +67,17 @@ fn process_single_switch(
         upper_limit: submission.upper_limit,
         lower_limit: submission.lower_limit,
         sound_effect,
-        raw_node_name: submission.raw_node_name.clone(), // Add the raw node name field
+        raw_node_name: submission.raw_node_name.clone(),
     };
 
-    // Serialize the new switch data to a JSON value.
-    let new_switch_value = serde_json::to_value(&switch_data)
-        .map_err(|e| format!("Failed to serialize switch data: {}", e))?;
-    // Insert or update the switch entry (overwriting if the name already exists).
+    // Serialize and insert the new switch data
+    let new_switch_value = utils::serialize_to_json(&switch_data)?;
+
+    // Insert or update the switch entry
     switches
         .as_object_mut()
         .unwrap()
         .insert(submission.switch_name.clone(), new_switch_value);
+
     Ok(())
 }

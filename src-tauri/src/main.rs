@@ -5,6 +5,7 @@
 
 mod commands;
 mod models;
+mod utils;
 
 use commands::*;
 use tauri::Manager;

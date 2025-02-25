@@ -14,16 +14,22 @@ fn traverse_node(
     tags: &[&str],
     switches: &mut Vec<SwitchItem>,
     configured_switches: &HashSet<String>,
+    all_node_names: &mut Vec<String>,
     depth: usize,
 ) {
     if let Some(name) = node.name() {
+        let raw_node_name = name.to_string();
+        
+        // Add every node name to the all_node_names list
+        all_node_names.push(raw_node_name.clone());
+        
+        let mut is_switch = false;
         for tag in tags {
             let pattern = format!("(?i){}", regex::escape(tag));
             let re = Regex::new(&pattern).expect("Failed to compile regex pattern");
             if re.is_match(name) {
-                // Store the original, unmodified node name
-                let raw_node_name = name.to_string();
-
+                is_switch = true;
+                
                 // Create the pretty name by removing tag and "-Collider"
                 let mut pretty_name = re.replace_all(name, "").to_string();
                 pretty_name = pretty_name.replace("-Collider", "");
@@ -41,14 +47,14 @@ fn traverse_node(
                     pretty_name,                      // This is the processed name
                     is_configured,
                     switch_type,
-                    raw_node_name, // Store the raw node name in the new field
+                    raw_node_name: raw_node_name.clone(), // Store the raw node name in the new field
                 });
                 break;
             }
         }
     }
     for child in node.children() {
-        traverse_node(child, tags, switches, configured_switches, depth + 1);
+        traverse_node(child, tags, switches, configured_switches, all_node_names, depth + 1);
     }
 }
 
@@ -78,7 +84,7 @@ pub async fn load_plane_model_data(app_handle: tauri::AppHandle) -> Result<Parse
     let file_contents = fs::read_to_string(&current_json_file_path)
         .map_err(|e| format!("failed to read config file: {}", e))?;
 
-    let json_value: serde_json::Value = serde_json::from_str(&file_contents)
+    let mut json_value: serde_json::Value = serde_json::from_str(&file_contents)
         .map_err(|e| format!("failed to parse config JSON: {}", e))?;
 
     let model_path = json_value
@@ -102,15 +108,41 @@ pub async fn load_plane_model_data(app_handle: tauri::AppHandle) -> Result<Parse
     let gltf = gltf::Gltf::from_slice(&data).map_err(|e| e.to_string())?;
 
     let mut switches = Vec::new();
+    let mut all_node_names = Vec::new();
     let tags = ["-Dial", "-Button", "-Lever"];
 
     for scene in gltf.scenes() {
         for node in scene.nodes() {
-            traverse_node(node, &tags, &mut switches, &configured_switches, 0);
+            traverse_node(node, &tags, &mut switches, &configured_switches, &mut all_node_names, 0);
         }
     }
 
     println!("parse_glb: found {} switch(es).", switches.len());
+    println!("parse_glb: found {} total node(s).", all_node_names.len());
+
+    // Extract switch node names to filter them out
+    let switch_node_names: HashSet<String> = switches.iter()
+        .map(|s| s.raw_node_name.clone())
+        .collect();
+
+    // Filter out switch nodes to get only non-switch nodes
+    let non_switch_nodes: Vec<String> = all_node_names
+        .into_iter()
+        .filter(|name| !switch_node_names.contains(name))
+        .collect();
+
+    // Update the JSON value with non-switch node names
+    if json_value.is_object() {
+        let json_obj = json_value.as_object_mut().unwrap();
+        json_obj.insert("nonSwitchRawNodeNames".to_string(), serde_json::to_value(non_switch_nodes).unwrap());
+        
+        // Write the updated JSON back to the file
+        let updated_json = serde_json::to_string_pretty(&json_value)
+            .map_err(|e| format!("Failed to serialize updated JSON: {}", e))?;
+            
+        std::fs::write(&current_json_file_path, updated_json)
+            .map_err(|e| format!("Failed to write JSON file: {}", e))?;
+    }
 
     Ok(ParsedGLBData {
         switches,
