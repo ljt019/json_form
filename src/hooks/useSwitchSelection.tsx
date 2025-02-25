@@ -1,5 +1,3 @@
-"use client";
-
 import type React from "react";
 
 import {
@@ -11,6 +9,7 @@ import {
   useCallback,
 } from "react";
 import type { SwitchItem } from "@/types";
+import { useSelectionState } from "./useSelectionState";
 
 interface SwitchSelectionProviderProps {
   children: ReactNode;
@@ -36,67 +35,21 @@ export function SwitchSelectionProvider({
   children,
 }: SwitchSelectionProviderProps) {
   const [switchList, setSwitchList] = useState<SwitchItem[]>([]);
-  const [selectedSwitches, setSelectedSwitches] = useState<SwitchItem[]>([]);
-  const [anchorIndex, setAnchorIndex] = useState<number>(-1);
 
-  const handleShiftSelection = useCallback(
-    (currentIndex: number) => {
-      if (anchorIndex === -1) {
-        return;
-      }
+  const { selectedItems: selectedSwitches, handleSelect } =
+    useSelectionState<SwitchItem>(switchList, {
+      withShiftSelect: true,
+      withCtrlSelect: true,
+    });
 
-      const start = Math.min(anchorIndex, currentIndex);
-      const end = Math.max(anchorIndex, currentIndex);
-
-      const newSelection = switchList.slice(start, end + 1);
-
-      setSelectedSwitches(newSelection);
-    },
-    [anchorIndex, switchList]
-  );
-
-  const handleCtrlSelection = useCallback(
-    (sw: SwitchItem, currentIndex: number) => {
-      const alreadySelected = selectedSwitches.some((s) => s.name === sw.name);
-
-      if (alreadySelected) {
-        setSelectedSwitches(selectedSwitches.filter((s) => s.name !== sw.name));
-      } else {
-        setSelectedSwitches([...selectedSwitches, sw]);
-        setAnchorIndex(currentIndex);
-      }
-    },
-    [selectedSwitches]
-  );
-
-  const handleSingleSelection = useCallback(
-    (sw: SwitchItem, currentIndex: number) => {
-      setSelectedSwitches([sw]);
-      setAnchorIndex(currentIndex);
-    },
-    []
-  );
-
+  // Provide backward compatible API for existing components
   const handleSelectSwitch = useCallback(
     (sw: SwitchItem, shiftKey: boolean, ctrlKey: boolean) => {
-      const currentIndex = switchList.findIndex((s) => s.name === sw.name);
-
       startTransition(() => {
-        if (shiftKey) {
-          handleShiftSelection(currentIndex);
-        } else if (ctrlKey) {
-          handleCtrlSelection(sw, currentIndex);
-        } else {
-          handleSingleSelection(sw, currentIndex);
-        }
+        handleSelect(sw, shiftKey, ctrlKey);
       });
     },
-    [
-      switchList,
-      handleShiftSelection,
-      handleCtrlSelection,
-      handleSingleSelection,
-    ]
+    [handleSelect]
   );
 
   const value = {

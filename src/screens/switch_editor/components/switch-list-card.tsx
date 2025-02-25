@@ -1,41 +1,30 @@
-import { Suspense, useState, useMemo } from "react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
+import { Suspense, useMemo } from "react";
 import {
   FileText,
-  ArrowLeft,
   CheckCircle,
   XCircle,
-  Search,
 } from "lucide-react";
 import { usePlaneModel } from "@/hooks/usePlaneModel";
 import { useSwitchSelection } from "@/hooks/useSwitchSelection";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
 import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
 import { LoadingCard } from "@/components/loading";
+import { SelectableList } from "@/components/selectable-list";
+import { ErrorBoundary } from "@/components/error-boundary";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface SwitchListContentProps {
   onBack: () => void;
 }
 
 function SwitchListContent({ onBack }: SwitchListContentProps) {
-  const [searchTerm, setSearchTerm] = useState("");
   const { data: planeData } = useGetSelectedConfigData();
   const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
   const { modelError } = usePlaneModel({ parsedData });
   const { switchList, selectedSwitches, handleSelectSwitch } =
     useSwitchSelection();
 
-  const filteredSwitchList = useMemo(
-    () =>
-      switchList.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [switchList, searchTerm]
-  );
-
+  // Calculate configured switches
   const configuredCount = useMemo(
     () => switchList.filter((item) => item.isConfigured).length,
     [switchList]
@@ -55,83 +44,30 @@ function SwitchListContent({ onBack }: SwitchListContentProps) {
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex-shrink-0 pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold flex items-center">
-            <FileText className="w-6 h-6 mr-2" />
-            switch list
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onBack}
-            className="flex items-center"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            back
-          </Button>
+    <SelectableList
+      items={switchList}
+      selectedItems={selectedSwitches}
+      onSelect={handleSelectSwitch}
+      title="switch list"
+      icon={<FileText className="w-6 h-6 mr-2" />}
+      onBack={onBack}
+      searchPlaceholder="search switches..."
+      renderItem={(item, isSelected) => (
+        <div className="flex items-center justify-between w-full">
+          <span>{item.name}</span>
+          {item.isConfigured ? (
+            <CheckCircle className="w-5 h-5 text-green-500" />
+          ) : (
+            <XCircle className="w-5 h-5 text-red-500" />
+          )}
         </div>
-      </CardHeader>
-      <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
-        <div className="px-4 py-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="search switches..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
-          </div>
-        </div>
-        <ScrollArea className="flex-grow">
-          <div className="px-4 py-2">
-            {filteredSwitchList.length === 0 ? (
-              <div className="py-4 text-center text-muted-foreground">
-                {searchTerm
-                  ? "no matches found."
-                  : "no switches found in the model."}
-              </div>
-            ) : (
-              <ul className="space-y-1">
-                {filteredSwitchList.map((item, index) => {
-                  const isSelected = selectedSwitches.some(
-                    (s) => s.name === item.name
-                  );
-                  return (
-                    <li
-                      key={index}
-                      className={`py-2 px-3 rounded-md select-none cursor-pointer transition-colors flex items-center justify-between ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted"
-                      }`}
-                      onClick={(e) =>
-                        handleSelectSwitch(item, e.shiftKey, e.ctrlKey)
-                      }
-                    >
-                      <span>{item.name}</span>
-                      {item.isConfigured ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-500" />
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </ScrollArea>
-        <div className="px-4 py-2 mt-auto">
-          <p className="text-sm text-muted-foreground">
-            {configuredCount} out of {switchList.length} switches configured
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+      )}
+      footerContent={(filteredItems) => (
+        <p className="text-sm text-muted-foreground">
+          {configuredCount} out of {switchList.length} switches configured
+        </p>
+      )}
+    />
   );
 }
 
@@ -143,7 +79,9 @@ export function SwitchList({ onBack }: SwitchListProps) {
   return (
     <div className="flex-[1.5] min-h-0">
       <Suspense fallback={<LoadingCard />}>
-        <SwitchListContent onBack={onBack} />
+        <ErrorBoundary>
+          <SwitchListContent onBack={onBack} />
+        </ErrorBoundary>
       </Suspense>
     </div>
   );

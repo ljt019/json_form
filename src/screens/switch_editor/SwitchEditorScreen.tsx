@@ -1,12 +1,12 @@
 import { Suspense } from "react";
 import { useNavigate } from "react-router-dom";
-import { ErrorBoundary } from "react-error-boundary";
 import { SwitchList } from "@/screens/switch_editor/components/switch-list-card";
 import { SwitchModelPreview } from "@/screens/switch_editor/components/switch-model-preview-card";
 import { PlaneForm } from "@/screens/switch_editor/components/form/form";
 import { ErrorCard } from "@/components/error";
 import { LoadingCard } from "@/components/loading";
 import { SwitchSelectionProvider } from "@/hooks/useSwitchSelection";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 export function SwitchEditorScreen() {
   const navigate = useNavigate();

@@ -1,37 +1,46 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import type { TeleportZoneItem } from "@/types";
+import { useSelectionState } from "./useSelectionState";
 
-export function useTeleportZoneSelection() {
-  const [selectedTeleportZones, setSelectedTeleportZones] = useState<
-    TeleportZoneItem[]
-  >([]);
-  const [hoveredTeleportZone, setHoveredTeleportZone] =
-    useState<TeleportZoneItem | null>(null);
+interface UseTeleportZoneSelectionOptions {
+  teleportZones?: TeleportZoneItem[];
+}
 
-  const handleSelectTeleportZone = (
-    zone: TeleportZoneItem,
-    shiftKey: boolean
-  ) => {
-    if (shiftKey) {
-      setSelectedTeleportZones((prev) => {
-        const exists = prev.some((item) => item.name === zone.name);
-        return exists
-          ? prev.filter((item) => item.name !== zone.name)
-          : [...prev, zone];
-      });
-    } else {
-      setSelectedTeleportZones([zone]);
-    }
-  };
+export function useTeleportZoneSelection(options: UseTeleportZoneSelectionOptions = {}) {
+  const { teleportZones = [] } = options;
+  
+  const {
+    selectedItems: selectedTeleportZones,
+    hoveredItem: hoveredTeleportZone,
+    handleSelect,
+    handleHover,
+  } = useSelectionState<TeleportZoneItem>(teleportZones, {
+    multiSelect: true,
+    withShiftSelect: false,
+  });
 
-  const handleHoverTeleportZone = (zone: TeleportZoneItem | null) => {
-    setHoveredTeleportZone(zone);
-  };
+  // Provide backward compatible API
+  const handleSelectTeleportZone = useCallback(
+    (zone: TeleportZoneItem, shiftKey: boolean) => {
+      handleSelect(zone, shiftKey, false);
+    },
+    [handleSelect]
+  );
+
+  const handleHoverTeleportZone = useCallback(
+    (zone: TeleportZoneItem | null) => {
+      handleHover(zone);
+    },
+    [handleHover]
+  );
 
   return {
     selectedTeleportZones,
     hoveredTeleportZone,
     handleSelectTeleportZone,
     handleHoverTeleportZone,
+    // Also expose the new API for future components
+    handleSelect,
+    handleHover,
   };
 }

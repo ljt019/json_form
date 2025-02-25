@@ -1,12 +1,10 @@
-import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Input } from "@/components/ui/input";
-import { FileText, ArrowLeft, Search, Trash2 } from "lucide-react";
+import { FileText, Trash2 } from "lucide-react";
 import type { TeleportZoneItem } from "@/types";
-import { EditableCoordinate } from "./editable-coordinate";
+import { Button } from "@/components/ui/button";
+import { SelectableList } from "@/components/selectable-list";
+import { CoordinateGroup } from "@/components/coordinate-group";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 interface TeleportZoneListProps {
   teleportZoneList: TeleportZoneItem[];
@@ -26,126 +24,60 @@ export function TeleportZoneList({
   onUpdateTeleportZone,
 }: TeleportZoneListProps) {
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
 
-  const filteredZoneList = useMemo(
-    () =>
-      teleportZoneList.filter((zone) =>
-        zone.name.toLowerCase().includes(searchTerm.toLowerCase())
-      ),
-    [teleportZoneList, searchTerm]
-  );
+  // Adapter function for the SelectableList component
+  const handleSelect = (zone: TeleportZoneItem, shiftKey: boolean, ctrlKey: boolean) => {
+    onSelectTeleportZone(zone, shiftKey);
+  };
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="flex-shrink-0 pb-2">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-2xl font-bold flex items-center">
-            <FileText className="w-6 h-6 mr-2" />
-            Teleport Zone List
-          </CardTitle>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/")}
-            className="flex items-center"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-grow p-0 overflow-hidden flex flex-col">
-        <div className="px-4 py-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search teleport zones..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8"
-            />
+    <ErrorBoundary>
+      <SelectableList
+        items={teleportZoneList}
+        selectedItems={selectedTeleportZones}
+        onSelect={handleSelect}
+        onHover={onHoverTeleportZone}
+        title="Teleport Zone List"
+        icon={<FileText className="w-6 h-6 mr-2" />}
+        onBack={() => navigate("/")}
+        searchPlaceholder="Search teleport zones..."
+        renderItem={(zone, isSelected) => (
+          <div className="flex-1 flex items-center justify-between mr-2">
+            <span>{zone.name}</span>
+            <div className="flex items-center">
+              <CoordinateGroup
+                x={zone.x}
+                y={zone.y}
+                z={zone.z}
+                onChangeX={(value) => onUpdateTeleportZone({ ...zone, x: value })}
+                onChangeY={(value) => onUpdateTeleportZone({ ...zone, y: value })}
+                onChangeZ={(value) => onUpdateTeleportZone({ ...zone, z: value })}
+              />
+              <Button
+                variant="ghost"
+                size="icon"
+                className={`w-8 h-8 p-1 ml-2 opacity-0 group-hover:opacity-100 hover:text-red-800 transition-opacity ${
+                  isSelected
+                    ? "hover:bg-primary-foreground/20"
+                    : "hover:bg-muted-foreground/20"
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDeleteTeleportZone(zone);
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-        <ScrollArea className="flex-grow">
-          <div className="px-4 py-2">
-            {filteredZoneList.length === 0 ? (
-              <div className="py-4 text-center text-muted-foreground">
-                {searchTerm ? "No matches found." : "No teleport zones found."}
-              </div>
-            ) : (
-              <ul className="space-y-1">
-                {filteredZoneList.map((zone, index) => {
-                  const isSelected = selectedTeleportZones.some(
-                    (z) => z.name === zone.name
-                  );
-                  return (
-                    <li
-                      key={index}
-                      className={`py-2 px-3 rounded-md cursor-pointer transition-colors flex items-center justify-between group ${
-                        isSelected
-                          ? "bg-primary text-primary-foreground"
-                          : "hover:bg-muted"
-                      }`}
-                    >
-                      <div
-                        className="flex-1 flex items-center justify-between mr-2"
-                        onClick={(e) => onSelectTeleportZone(zone, e.shiftKey)}
-                        onMouseEnter={() => onHoverTeleportZone(zone)}
-                        onMouseLeave={() => onHoverTeleportZone(null)}
-                      >
-                        <span>{zone.name}</span>
-                        <div className="flex items-center space-x-2">
-                          <EditableCoordinate
-                            value={zone.x}
-                            onChange={(value) =>
-                              onUpdateTeleportZone({ ...zone, x: value })
-                            }
-                            label="X"
-                          />
-                          <EditableCoordinate
-                            value={zone.y}
-                            onChange={(value) =>
-                              onUpdateTeleportZone({ ...zone, y: value })
-                            }
-                            label="Y"
-                          />
-                          <EditableCoordinate
-                            value={zone.z}
-                            onChange={(value) =>
-                              onUpdateTeleportZone({ ...zone, z: value })
-                            }
-                            label="Z"
-                          />
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`w-8 h-8 p-1 opacity-0 group-hover:opacity-100 hover:text-red-800 transition-opacity ${
-                          isSelected
-                            ? "hover:bg-primary-foreground/20"
-                            : "hover:bg-muted-foreground/20"
-                        }`}
-                        onClick={() => onDeleteTeleportZone(zone)}
-                      >
-                        <Trash2 className="w-4 h-4 " />
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-        </ScrollArea>
-        <div className="px-4 py-2 mt-auto">
+        )}
+        footerContent={(filteredItems) => (
           <p className="text-sm text-muted-foreground">
-            {filteredZoneList.length} teleport zone
-            {filteredZoneList.length !== 1 && "s"} found
+            {filteredItems.length} teleport zone
+            {filteredItems.length !== 1 && "s"} found
           </p>
-        </div>
-      </CardContent>
-    </Card>
+        )}
+      />
+    </ErrorBoundary>
   );
 }
