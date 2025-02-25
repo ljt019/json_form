@@ -3,7 +3,7 @@ import { FileText, Trash2 } from "lucide-react";
 import type { TeleportZoneItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { SelectableList } from "@/components/selectable-list";
-import { CoordinateGroup } from "@/components/coordinate-group";
+import { CoordinateGroup, Coordinates3D } from "@/components/coordinate-group";
 import { ErrorBoundary } from "@/components/error-boundary";
 
 interface TeleportZoneListProps {
@@ -29,6 +29,16 @@ export function TeleportZoneList({
   const handleSelect = (zone: TeleportZoneItem, shiftKey: boolean, ctrlKey: boolean) => {
     onSelectTeleportZone(zone, shiftKey);
   };
+  
+  // Handler for coordinate changes
+  const handleCoordinateChange = (zone: TeleportZoneItem, coordinates: Coordinates3D) => {
+    onUpdateTeleportZone({
+      ...zone,
+      x: coordinates.x,
+      y: coordinates.y,
+      z: coordinates.z
+    });
+  };
 
   return (
     <ErrorBoundary>
@@ -41,17 +51,24 @@ export function TeleportZoneList({
         icon={<FileText className="w-6 h-6 mr-2" />}
         onBack={() => navigate("/")}
         searchPlaceholder="Search teleport zones..."
+        idField="name"
+        sortable={true}
+        showPagination={teleportZoneList.length > 10}
+        pageSize={10}
+        filterOptions={{
+          filterFields: ['name'],
+          sortField: 'name',
+          sortDirection: 'asc'
+        }}
         renderItem={(zone, isSelected) => (
           <div className="flex-1 flex items-center justify-between mr-2">
             <span>{zone.name}</span>
             <div className="flex items-center">
               <CoordinateGroup
-                x={zone.x}
-                y={zone.y}
-                z={zone.z}
-                onChangeX={(value) => onUpdateTeleportZone({ ...zone, x: value })}
-                onChangeY={(value) => onUpdateTeleportZone({ ...zone, y: value })}
-                onChangeZ={(value) => onUpdateTeleportZone({ ...zone, z: value })}
+                coordinates={{ x: zone.x, y: zone.y, z: zone.z }}
+                onChange={(coords) => handleCoordinateChange(zone, coords)}
+                precision={2}
+                step={0.1}
               />
               <Button
                 variant="ghost"

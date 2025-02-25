@@ -1,119 +1,137 @@
-import { useState, useCallback } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
 
+/**
+ * Generic interface for selectable items with unique identifiers
+ */
 export interface Selectable {
   id?: string | number;
-  name: string;
+  [key: string]: any;
 }
 
+/**
+ * Selection state and functions
+ */
 export interface SelectionState<T extends Selectable> {
-  selectedItems: T[];
-  handleSelect: (item: T, shiftKey: boolean, ctrlKey: boolean) => void;
-  hoveredItem: T | null;
-  handleHover: (item: T | null) => void;
+  selectedItem: T | undefined;
+  selectedItemId: string | number | undefined;
+  selectItem: (item: T) => void;
+  selectItemById: (id: string | number) => void;
+  clearSelection: () => void;
+  isSelected: (item: T) => boolean;
+  isSelectedById: (id: string | number) => boolean;
 }
 
+/**
+ * Options for the selection hook
+ */
+export interface SelectionOptions<T extends Selectable> {
+  initialItem?: T;
+  idField?: keyof T; // Field to use as unique identifier, defaults to 'id'
+  compareFn?: (a: T, b: T) => boolean; // Custom comparison function
+}
+
+/**
+ * Hook to manage selection state for any type of items
+ * Can be used standalone or with context provider
+ * 
+ * @param options Selection options
+ * @param items Optional array of available items (required for selectItemById)
+ * @returns Selection state and functions
+ */
 export function useSelectionState<T extends Selectable>(
-  items: T[],
-  options?: {
-    multiSelect?: boolean;
-    withShiftSelect?: boolean;
-    withCtrlSelect?: boolean;
-  }
+  options: SelectionOptions<T> = {},
+  items?: T[]
 ): SelectionState<T> {
-  const [selectedItems, setSelectedItems] = useState<T[]>([]);
-  const [hoveredItem, setHoveredItem] = useState<T | null>(null);
-  const [anchorIndex, setAnchorIndex] = useState<number>(-1);
+  const {
+    initialItem,
+    idField = 'id' as keyof T,
+    compareFn = (a, b) => a === b,
+  } = options;
 
-  const handleShiftSelection = useCallback(
-    (currentIndex: number) => {
-      if (anchorIndex === -1 || !options?.withShiftSelect) {
-        return;
-      }
+  const [selectedItem, setSelectedItem] = useState<T | undefined>(initialItem);
 
-      const start = Math.min(anchorIndex, currentIndex);
-      const end = Math.max(anchorIndex, currentIndex);
+  // Get the ID of the currently selected item
+  const selectedItemId = selectedItem?.[idField] as string | number | undefined;
 
-      const newSelection = items.slice(start, end + 1);
+  // Select an item by direct reference
+  function selectItem(item: T) {
+    setSelectedItem(item);
+  }
 
-      setSelectedItems(newSelection);
-    },
-    [anchorIndex, items, options?.withShiftSelect]
-  );
+  // Select an item by its ID (requires items array)
+  function selectItemById(id: string | number) {
+    if (!items) {
+      console.warn('Cannot select by ID without items array');
+      return;
+    }
+    
+    const item = items.find(item => item[idField] === id);
+    if (item) {
+      setSelectedItem(item);
+    }
+  }
 
-  const handleCtrlSelection = useCallback(
-    (item: T, currentIndex: number) => {
-      if (!options?.withCtrlSelect) {
-        return;
-      }
+  // Clear the selection
+  function clearSelection() {
+    setSelectedItem(undefined);
+  }
 
-      const alreadySelected = selectedItems.some(
-        (s) => s.name === item.name
-      );
+  // Check if an item is selected by reference
+  function isSelected(item: T): boolean {
+    if (!selectedItem) return false;
+    return compareFn(selectedItem, item);
+  }
 
-      if (alreadySelected) {
-        setSelectedItems(selectedItems.filter((s) => s.name !== item.name));
-      } else {
-        setSelectedItems([...selectedItems, item]);
-        setAnchorIndex(currentIndex);
-      }
-    },
-    [selectedItems, options?.withCtrlSelect]
-  );
-
-  const handleSingleSelection = useCallback(
-    (item: T, currentIndex: number) => {
-      setSelectedItems([item]);
-      setAnchorIndex(currentIndex);
-    },
-    []
-  );
-
-  const handleToggleSelection = useCallback(
-    (item: T) => {
-      setSelectedItems((prev) => {
-        const exists = prev.some((i) => i.name === item.name);
-        return exists
-          ? prev.filter((i) => i.name !== item.name)
-          : [...prev, item];
-      });
-    },
-    []
-  );
-
-  const handleSelect = useCallback(
-    (item: T, shiftKey: boolean, ctrlKey: boolean) => {
-      const currentIndex = items.findIndex((i) => i.name === item.name);
-
-      if (shiftKey && options?.withShiftSelect) {
-        handleShiftSelection(currentIndex);
-      } else if (ctrlKey && options?.withCtrlSelect) {
-        handleCtrlSelection(item, currentIndex);
-      } else if (shiftKey && options?.multiSelect) {
-        handleToggleSelection(item);
-      } else {
-        handleSingleSelection(item, currentIndex);
-      }
-    },
-    [
-      items,
-      options?.multiSelect,
-      options?.withShiftSelect,
-      options?.withCtrlSelect,
-      handleShiftSelection,
-      handleCtrlSelection,
-      handleToggleSelection,
-      handleSingleSelection,
-    ]
-  );
-
-  const handleHover = useCallback((item: T | null) => {
-    setHoveredItem(item);
-  }, []);
+  // Check if an item is selected by ID
+  function isSelectedById(id: string | number): boolean {
+    if (!selectedItemId) return false;
+    return selectedItemId === id;
+  }
 
   return {
-    selectedItems,
-    handleSelect,
-    hoveredItem,
-    handleHover,
+    selectedItem,
+    selectedItemId,
+    selectItem,
+    selectItemById,
+    clearSelection,
+    isSelected,
+    isSelectedById,
+  };
+}
+
+// Create context for global selection state
+export function createSelectionContext<T extends Selectable>() {
+  return createContext<SelectionState<T> | undefined>(undefined);
+}
+
+// Context provider for global selection state
+export interface SelectionProviderProps<T extends Selectable> {
+  children: ReactNode;
+  options?: SelectionOptions<T>;
+  items?: T[];
+}
+
+export function createSelectionProvider<T extends Selectable>(SelectionContext: React.Context<SelectionState<T> | undefined>) {
+  return function SelectionProvider({ children, options = {}, items }: SelectionProviderProps<T>) {
+    const selectionState = useSelectionState<T>(options, items);
+    
+    return (
+      <SelectionContext.Provider value={selectionState}>
+        {children}
+      </SelectionContext.Provider>
+    );
+  };
+}
+
+// Hook to use global selection context
+export function createSelectionHook<T extends Selectable>(SelectionContext: React.Context<SelectionState<T> | undefined>) {
+  return function useSelection(): SelectionState<T> {
+    const context = useContext(SelectionContext);
+    
+    if (!context) {
+      throw new Error('useSelection must be used within a SelectionProvider');
+    }
+    
+    return context;
   };
 }
