@@ -5,14 +5,10 @@ import { FileText, Trash2 } from "lucide-react";
 import type { TeleportZoneItem } from "@/types";
 import { Button } from "@/components/ui/button";
 import { SelectableList } from "@/components/selectable-list";
-<<<<<<< HEAD
 import {
   CoordinateGroup,
   type Coordinates3D,
 } from "@/components/coordinate-group";
-=======
-import { CoordinateGroup, Coordinates3D } from "@/components/coordinate-group";
->>>>>>> a86234711916588ef584ca925316ddf2d73c9675
 import { ErrorBoundary } from "@/components/error-boundary";
 
 interface TeleportZoneListProps {
@@ -46,16 +42,6 @@ export function TeleportZoneList({
   ) => {
     if (editingZoneId === zone.name) return;
     onSelectTeleportZone(zone, shiftKey);
-  };
-  
-  // Handler for coordinate changes
-  const handleCoordinateChange = (zone: TeleportZoneItem, coordinates: Coordinates3D) => {
-    onUpdateTeleportZone({
-      ...zone,
-      x: coordinates.x,
-      y: coordinates.y,
-      z: coordinates.z
-    });
   };
 
   const handleCoordinateChange = (
@@ -142,15 +128,6 @@ export function TeleportZoneList({
         icon={<FileText className="w-6 h-6 mr-2" />}
         onBack={() => navigate("/")}
         searchPlaceholder="Search teleport zones..."
-        idField="name"
-        sortable={true}
-        showPagination={teleportZoneList.length > 10}
-        pageSize={10}
-        filterOptions={{
-          filterFields: ['name'],
-          sortField: 'name',
-          sortDirection: 'asc'
-        }}
         renderItem={(zone, isSelected) => (
           <div className="flex-1 flex items-center justify-between mr-2">
             {editingZoneId === zone.name ? (

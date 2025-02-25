@@ -1,81 +1,46 @@
 import { useCallback, useState } from "react";
 import type { TeleportZoneItem } from "@/types";
-import { Selectable, useSelectionState, SelectionOptions } from "./useSelectionState";
-
-// Extend TeleportZoneItem to include our Selectable interface requirements
-interface SelectableTeleportZoneItem extends TeleportZoneItem, Selectable {
-  // The teleport_zone_key property will be used as the unique identifier
-}
+import { useSelectionState } from "./useSelectionState";
 
 interface UseTeleportZoneSelectionOptions {
-  teleportZones?: SelectableTeleportZoneItem[];
-  selectionOptions?: Partial<SelectionOptions<SelectableTeleportZoneItem>>;
+  teleportZones?: TeleportZoneItem[];
 }
 
-<<<<<<< HEAD
 export function useTeleportZoneSelection(
   options: UseTeleportZoneSelectionOptions = {}
 ) {
   const { teleportZones = [] } = options;
 
-=======
-export function useTeleportZoneSelection(options: UseTeleportZoneSelectionOptions = {}) {
-  const { 
-    teleportZones = [],
-    selectionOptions = {} 
-  } = options;
-  
-  // Track hover state separately
-  const [hoveredZone, setHoveredZone] = useState<SelectableTeleportZoneItem | undefined>(undefined);
-
-  // Use our generic selection hook
->>>>>>> a86234711916588ef584ca925316ddf2d73c9675
   const {
-    selectedItem,
-    selectItem,
-    clearSelection,
-    isSelected
-  } = useSelectionState<SelectableTeleportZoneItem>({
-    idField: 'name', // Use name as the ID field
-    compareFn: (a, b) => a.name === b.name,
-    ...selectionOptions
-  }, teleportZones);
+    selectedItems: selectedTeleportZones,
+    hoveredItem: hoveredTeleportZone,
+    handleSelect,
+    handleHover,
+  } = useSelectionState<TeleportZoneItem>(teleportZones, {
+    multiSelect: true,
+    withShiftSelect: false,
+  });
 
   const handleSelectTeleportZone = useCallback(
-    (zone: SelectableTeleportZoneItem, shiftKey: boolean) => {
-      // If the zone is already selected and they click it again, deselect it
-      if (isSelected(zone)) {
-        clearSelection();
-      } else {
-        selectItem(zone);
-      }
+    (zone: TeleportZoneItem, shiftKey: boolean) => {
+      handleSelect(zone, shiftKey, false);
     },
-    [selectItem, clearSelection, isSelected]
+    [handleSelect]
   );
 
   const handleHoverTeleportZone = useCallback(
-    (zone: SelectableTeleportZoneItem | null) => {
-      setHoveredZone(zone || undefined);
+    (zone: TeleportZoneItem | null) => {
+      handleHover(zone);
     },
-    []
+    [handleHover]
   );
 
   return {
-    // Return in the same format as before for backward compatibility
-    selectedTeleportZones: selectedItem ? [selectedItem] : [],
-    hoveredTeleportZone: hoveredZone || null,
+    selectedTeleportZones,
+    hoveredTeleportZone,
     handleSelectTeleportZone,
     handleHoverTeleportZone,
-<<<<<<< HEAD
     handleSelect,
     handleHover,
-=======
-    
-    // Also expose the new API for future components
-    selectedItem,
-    selectItem,
-    clearSelection,
-    isSelected,
->>>>>>> a86234711916588ef584ca925316ddf2d73c9675
   };
 }
