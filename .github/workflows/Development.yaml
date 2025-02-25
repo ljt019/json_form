@@ -1,0 +1,24 @@
+name: Development Branch Protection
+
+on:
+  pull_request_target:
+    types:
+      - opened
+    branches:
+      - Development
+
+jobs:
+  check-branch-development:
+    if: github.run_number != 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 20 seconds
+        run: sleep 20s
+        shell: bash
+      - name: Check branch
+        run: |
+          if [[ ${GITHUB_HEAD_REF} == QA ]] || [[ ${GITHUB_HEAD_REF} == Production ]]; 
+          then
+            echo "Error: Pull request must come from a feature branch, not QA nor Production"
+            exit 1
+          fi

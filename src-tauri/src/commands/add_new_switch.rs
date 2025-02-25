@@ -104,6 +104,7 @@ fn process_single_switch(
         upper_limit: submission.upper_limit,
         lower_limit: submission.lower_limit,
         sound_effect,
+        raw_node_name: submission.raw_node_name.clone(), // Add the raw node name field
     };
 
     // Serialize the new switch data to a JSON value.

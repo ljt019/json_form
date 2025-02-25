@@ -27,6 +27,7 @@ interface SwitchData {
   defaultPosition: number;
   upperLimit: number;
   lowerLimit: number;
+  rawNodeName: string;
 }
 
 async function fetchSelectedConfigData(): Promise<FullConfigFile> {

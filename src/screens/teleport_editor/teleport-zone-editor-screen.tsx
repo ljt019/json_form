@@ -36,12 +36,14 @@ function TeleportEditorContent() {
 
   const teleportZoneList = useMemo(() => {
     const zones = planeData?.teleportZones || {};
-    return Object.keys(zones).map((key) => ({
-      name: key,
-      x: zones[key].x,
-      y: zones[key].y,
-      z: zones[key].z,
-    }));
+    return Object.keys(zones)
+      .sort((a, b) => a.localeCompare(b)) // Sort alphabetically by name
+      .map((key) => ({
+        name: key,
+        x: zones[key].x,
+        y: zones[key].y,
+        z: zones[key].z,
+      }));
   }, [planeData]);
 
   const handleDeleteTeleportZone = (zone: TeleportZoneItem) => {

@@ -13,8 +13,8 @@ import { LoadingCard } from "@/components/loading";
 function ModelScene() {
   const { data: planeData } = useGetSelectedConfigData();
   const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
-  const { switchList } = usePlaneModel({ parsedData });
-  const { displayedSwitch } = useSwitchSelection({ switchList });
+  const { modelError } = usePlaneModel({ parsedData });
+  const { displayedSwitch } = useSwitchSelection();
 
   return (
     <>

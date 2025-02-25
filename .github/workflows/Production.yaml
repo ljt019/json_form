@@ -1,0 +1,24 @@
+name: Production Branch Protection
+
+on:
+  pull_request_target:
+    types:
+      - opened
+    branches:
+      - Production
+
+jobs:
+  check-branch-production:
+    if: github.run_number != 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sleep for 20 seconds
+        run: sleep 20s
+        shell: bash
+      - name: Check branch
+        run: |
+          if [[ ${GITHUB_HEAD_REF} != QA ]];
+          then
+            echo "Error: Pull request must come from the QA branch"
+            exit 1
+          fi

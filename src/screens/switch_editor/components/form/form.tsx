@@ -1,3 +1,5 @@
+"use client";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -24,62 +26,60 @@ import {
 } from "./fields";
 import useCreateNewSwitch from "@/hooks/mutations/useCreateNewSwitch";
 import { useGetSelectedConfigData } from "@/hooks/queries/useGetSelectedConfigData";
-import { useLoadPlaneModelData } from "@/hooks/queries/useLoadPlaneModelData";
-import { usePlaneModel } from "@/hooks/usePlaneModel";
 import { useSwitchSelection } from "@/hooks/useSwitchSelection";
+import { useEffect } from "react";
 
 function FormContent() {
   const { data: planeData } = useGetSelectedConfigData();
-  const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
-  const { switchList } = usePlaneModel({ parsedData });
-  const { selectedSwitches } = useSwitchSelection({ switchList });
+  const { selectedSwitches } = useSwitchSelection();
 
   const hasSelectedSwitches = selectedSwitches.length > 0;
 
-  const defaultValues: FormData = {
-    switchName: "",
-    switchType: "button",
-    movementAxis: "X",
-    switchDescription: "",
-    movementMode: false,
-    momentarySwitch: false,
-    defaultPosition: undefined,
-    upperLimit: 0,
-    lowerLimit: 0,
-    bleedMargins: 0,
-  };
-
-  if (hasSelectedSwitches) {
-    const primarySwitch = selectedSwitches[0];
-    const existingConfig = planeData?.switches[primarySwitch.name];
-
-    defaultValues.switchName =
-      selectedSwitches.length > 1 ? "GROUP SELECTED" : primarySwitch.name;
-    defaultValues.switchType =
-      selectedSwitches.length > 1
-        ? "GROUP SELECTED"
-        : (primarySwitch.switchType as
-            | "button"
-            | "dial"
-            | "lever"
-            | "throttle");
-    defaultValues.movementAxis = (existingConfig?.movementAxis ?? "X") as
-      | "X"
-      | "Y"
-      | "Z";
-    defaultValues.switchDescription = existingConfig?.switchDescription ?? "";
-    defaultValues.movementMode = existingConfig?.movementMode ?? false;
-    defaultValues.momentarySwitch = existingConfig?.momentarySwitch ?? false;
-    defaultValues.defaultPosition = existingConfig?.defaultPosition;
-    defaultValues.upperLimit = Number(existingConfig?.upperLimit ?? 0);
-    defaultValues.lowerLimit = Number(existingConfig?.lowerLimit ?? 0);
-    defaultValues.bleedMargins = Number(existingConfig?.bleedMargins ?? 0);
-  }
-
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      switchName: "",
+      switchType: "button",
+      movementAxis: "X",
+      switchDescription: "",
+      movementMode: false,
+      momentarySwitch: false,
+      defaultPosition: undefined,
+      upperLimit: 0,
+      lowerLimit: 0,
+      bleedMargins: 0,
+      rawNodeName: "",
+    },
   });
+
+  useEffect(() => {
+    if (hasSelectedSwitches) {
+      const primarySwitch = selectedSwitches[0];
+      const existingConfig = planeData?.switches[primarySwitch.name];
+
+      form.reset({
+        switchName:
+          selectedSwitches.length > 1 ? "GROUP SELECTED" : primarySwitch.name,
+        switchType:
+          selectedSwitches.length > 1
+            ? "GROUP SELECTED"
+            : (primarySwitch.switchType as
+                | "button"
+                | "dial"
+                | "lever"
+                | "throttle"),
+        movementAxis: (existingConfig?.movementAxis ?? "X") as "X" | "Y" | "Z",
+        switchDescription: existingConfig?.switchDescription ?? "",
+        movementMode: existingConfig?.movementMode ?? false,
+        momentarySwitch: existingConfig?.momentarySwitch ?? false,
+        defaultPosition: existingConfig?.defaultPosition,
+        upperLimit: Number(existingConfig?.upperLimit ?? 0),
+        lowerLimit: Number(existingConfig?.lowerLimit ?? 0),
+        bleedMargins: Number(existingConfig?.bleedMargins ?? 0),
+        rawNodeName: existingConfig?.rawNodeName ?? primarySwitch.mesh.name, // Use mesh.name from the Three.js object
+      });
+    }
+  }, [selectedSwitches, planeData, form, hasSelectedSwitches]);
 
   const isMomentary = form.watch("momentarySwitch");
   const { mutate: createNewSwitch, isPending } = useCreateNewSwitch();
@@ -101,6 +101,7 @@ function FormContent() {
           ...validatedData,
           switchName: sw.name,
           switchType: sw.switchType,
+          rawNodeName: sw.mesh.name,
         }));
         createNewSwitch(batchedPayload as any);
       } else {
@@ -109,6 +110,7 @@ function FormContent() {
           ...validatedData,
           switchName: primarySwitch.name,
           switchType: primarySwitch.switchType as any,
+          rawNodeName: primarySwitch.mesh.name,
         });
       }
     } catch (error) {

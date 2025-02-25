@@ -1,8 +1,5 @@
-"use client";
-
 import type React from "react";
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -20,13 +17,18 @@ export function EditableCoordinate({
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value.toFixed(2));
 
+  // Reset tempValue whenever value prop changes or editing state changes
+  useEffect(() => {
+    setTempValue(value.toFixed(2));
+  }, [value, isEditing]);
+
   const handleBlur = () => {
     setIsEditing(false);
     const newValue = Number.parseFloat(tempValue);
-    if (!isNaN(newValue) && newValue !== value) {
+
+    // Only trigger onChange if the value is valid and actually different
+    if (!isNaN(newValue) && Math.abs(newValue - value) > 0.001) {
       onChange(newValue);
-    } else {
-      setTempValue(value.toFixed(2));
     }
   };
 
@@ -35,7 +37,6 @@ export function EditableCoordinate({
       handleBlur();
     } else if (e.key === "Escape") {
       setIsEditing(false);
-      setTempValue(value.toFixed(2));
     }
   };
 

@@ -1,0 +1,153 @@
+name: initialize-repo
+on: 
+  push:
+    branches:
+      - Production
+jobs:
+  initialize-repo:
+    if: github.run_number == 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add QA to Repo
+        run: |
+          curl -X PUT -H "Authorization: token ${{ secrets.REPO_INITIALIZER }}" "https://api.github.com/orgs/${{ github.repository_owner }}/teams/qa-team/repos/${{ github.repository }}" -d '{"permission":"push"}'
+      - name: Setup Environment by Fetching SHA 
+        if: ${{ github.event_name == 'push' }}  
+        shell: bash  
+        run: |  
+          echo "LAST_COMMIT_SHA=${GITHUB_SHA}" >> ${GITHUB_ENV}
+          
+      - name: create-development-branch
+        uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_INITIALIZER }}
+        with:
+          branch: 'Development'
+          sha: ${{ env.LAST_COMMIT_SHA }}
+      - name: create-qa-branch
+        uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_INITIALIZER }}
+        with:
+          branch: 'QA'
+          sha: ${{ env.LAST_COMMIT_SHA }}
+      - name: create-initializer-branch
+        uses: peterjgrainger/action-create-branch@v2.2.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPO_INITIALIZER }}
+        with:
+          branch: 'Initializer'
+          sha: ${{ env.LAST_COMMIT_SHA }}
+          
+      - uses: actions/checkout@v4
+        with:
+          ref: Initializer
+          token: ${{ secrets.REPO_INITIALIZER }}
+      - name: Make changes to pull request
+        run: date +%s > report.txt
+      - uses: stefanzweifel/git-auto-commit-action@v5
+      
+      - name: Pull req num one
+        uses: devops-infra/action-pull-request@v0.5.5
+        with:
+          github_token: ${{ secrets.REPO_INITIALIZER }}
+          target_branch: Development
+          title: Automations Part One
+      - name: Pull req num two
+        uses: devops-infra/action-pull-request@v0.5.5
+        with:
+          github_token: ${{ secrets.REPO_INITIALIZER }}
+          target_branch: QA
+          title: Automations Part Two
+      - name: Pull req num three
+        uses: devops-infra/action-pull-request@v0.5.5
+        with:
+          github_token: ${{ secrets.REPO_INITIALIZER }}
+          target_branch: Production
+          title: Automations Part Three
+      - name: Sleep for 20 seconds
+        run: sleep 20s
+        shell: bash
+      - name: Close Pull Req One
+        run: gh pr close --comment "Auto-closing pull request" "1"
+        env:
+          GH_TOKEN: ${{ secrets.REPO_INITIALIZER }}
+      - name: Close Pull Req Two
+        run: gh pr close --comment "Auto-closing pull request" "2"
+        env:
+          GH_TOKEN: ${{ secrets.REPO_INITIALIZER }}
+      - name: Close Pull Req Three
+        run: gh pr close --comment "Auto-closing pull request" "3"
+        env:
+          GH_TOKEN: ${{ secrets.REPO_INITIALIZER }}
+      - name: Create Branch Protection Config
+        run: |
+          cat >> branch-protections.yaml << EOF
+          - branch: Development
+            protection:
+              required_status_checks:
+                strict: false
+                contexts:
+                  - check-branch-development
+              required_pull_request_reviews:
+                dismissal_restrictions: null
+                dismiss_stale_reviews: false
+                require_code_owner_reviews: false
+                required_approving_review_count: 1
+              required_linear_history: false
+              allow_force_pushes: false
+              allow_deletions: false
+              enforce_admins: true
+          - branch: QA
+            protection:
+              required_status_checks:
+                strict: false
+                contexts:
+                  - check-branch-qa
+              required_pull_request_reviews:
+                dismissal_restrictions: null
+                dismiss_stale_reviews: false
+                require_code_owner_reviews: true
+                required_approving_review_count: 1
+              required_linear_history: false
+              allow_force_pushes: false
+              allow_deletions: false
+              enforce_admins: true
+              restrictions:
+                users: []
+                teams:
+                  - qa-team
+          - branch: Production
+            protection:
+              required_status_checks:
+                strict: false
+                contexts:
+                  - check-branch-production
+              required_pull_request_reviews:
+                dismissal_restrictions: null
+                dismiss_stale_reviews: false
+                require_code_owner_reviews: true
+                required_approving_review_count: 1
+              required_linear_history: false
+              allow_force_pushes: false
+              allow_deletions: false
+              enforce_admins: true
+              restrictions:
+                users: []
+                teams:
+                  - qa-team
+          EOF
+      - name: Update branch protection
+        uses: Hatzelencio/branch-protection@v1.0.0
+        with:
+          path: branch-protections.yaml
+        env:
+          GITHUB_TOKEN: ${{secrets.REPO_INITIALIZER}}
+      - uses: actions/checkout@v4
+        with:
+          ref: Development
+          token: ${{ secrets.REPO_INITIALIZER }}
+      - name: Delete Initializer Branch
+        run: |
+          git push origin --delete Initializer
+         

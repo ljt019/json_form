@@ -18,7 +18,7 @@ interface SwitchInfoProps {
 function SwitchInfo({ planeData, switches }: SwitchInfoProps) {
   const totalSwitches = switches.length;
   const configuredSwitches = switches.filter((s) =>
-    Object.keys(planeData.switches || {}).includes(s.meshName)
+    Object.keys(planeData.switches || {}).includes(s.prettyName)
   ).length;
 
   return (

@@ -1,6 +1,4 @@
-// schema.ts
 import * as z from "zod"
-
 export const formSchema = z
   .object({
     switchType: z.union([
@@ -31,6 +29,7 @@ export const formSchema = z
       required_error: "lower limit is required",
       invalid_type_error: "lower limit must be a number",
     }),
+    rawNodeName: z.string().optional(), // Added raw node name field (optional to maintain backward compatibility)
   })
   .refine(
     (data) => {
@@ -78,5 +77,4 @@ export const formSchema = z
       path: ["defaultPosition"],
     },
   )
-
 export type FormData = z.infer<typeof formSchema>

@@ -1,7 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useGLTF } from "@react-three/drei";
 import * as THREE from "three";
 import { SwitchItem } from "@/types";
+import { useSwitchSelection } from "@/hooks/useSwitchSelection";
 
 interface UsePlaneModelProps {
   parsedData: {
@@ -17,6 +18,7 @@ interface UsePlaneModelProps {
 
 export function usePlaneModel({ parsedData }: UsePlaneModelProps) {
   const [modelError, setModelError] = useState<string | null>(null);
+  const { setSwitchList } = useSwitchSelection();
 
   const { scene } = useGLTF(
     parsedData.blobUrl,
@@ -28,10 +30,10 @@ export function usePlaneModel({ parsedData }: UsePlaneModelProps) {
     }
   ) as unknown as { scene: THREE.Scene };
 
-  const switchList: SwitchItem[] = useMemo(() => {
-    if (!scene) return [];
+  useEffect(() => {
+    if (!scene) return;
 
-    return (parsedData.switches || [])
+    const newSwitchList = (parsedData.switches || [])
       .map((s) => {
         const mesh = scene.getObjectByName(s.meshName);
         if (mesh && mesh instanceof THREE.Mesh) {
@@ -45,7 +47,9 @@ export function usePlaneModel({ parsedData }: UsePlaneModelProps) {
         return null;
       })
       .filter((x): x is SwitchItem => x !== null);
-  }, [scene, parsedData]);
 
-  return { switchList, modelError };
+    setSwitchList(newSwitchList);
+  }, [scene, parsedData, setSwitchList]);
+
+  return { modelError };
 }

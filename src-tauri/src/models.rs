@@ -20,6 +20,7 @@ pub struct SwitchData {
     pub default_position: f32,
     pub upper_limit: f32,
     pub lower_limit: f32,
+    pub raw_node_name: String, // Added the raw node name field
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -60,6 +61,7 @@ pub struct NewSwitchSubmission {
     pub default_position: f32,
     pub upper_limit: f32,
     pub lower_limit: f32,
+    pub raw_node_name: String, // Added the raw node name field
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -87,6 +89,7 @@ pub struct SwitchItem {
     pub pretty_name: String,
     pub is_configured: bool,
     pub switch_type: String,
+    pub raw_node_name: String, // Added to ensure we track this in the UI
 }
 
 #[derive(Serialize)]

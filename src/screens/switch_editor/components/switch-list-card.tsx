@@ -24,10 +24,9 @@ function SwitchListContent({ onBack }: SwitchListContentProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const { data: planeData } = useGetSelectedConfigData();
   const { data: parsedData } = useLoadPlaneModelData(planeData.modelPath);
-  const { switchList, modelError } = usePlaneModel({ parsedData });
-  const { selectedSwitches, handleSelectSwitch } = useSwitchSelection({
-    switchList,
-  });
+  const { modelError } = usePlaneModel({ parsedData });
+  const { switchList, selectedSwitches, handleSelectSwitch } =
+    useSwitchSelection();
 
   const filteredSwitchList = useMemo(
     () =>
